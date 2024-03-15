@@ -45,6 +45,9 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\basic_uniform.frag">
@@ -86,6 +89,28 @@
     <None Include="shader\post.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shader\water\waterShader.frag" />
+    <None Include="shader\water\waterShader.vert" />
+    <None Include="shader\standard\basic_uniform.frag" />
+    <None Include="shader\standard\basic_uniform.geom" />
+    <None Include="shader\standard\basic_uniform.vert" />
+    <None Include="shader\skybox\post.frag" />
+    <None Include="shader\skybox\skyboxShader.frag" />
+    <None Include="shader\skybox\skyboxShader.vert" />
+    <None Include="shader\lightmapping\depthShader.frag" />
+    <None Include="shader\lightmapping\depthShader.geom" />
+    <None Include="shader\lightmapping\depthShader.vert" />
+    <None Include="shader\lightmapping\directionalDepthShader.geom" />
+    <None Include="shader\lightmapping\omniDepthShader.geom" />
+    <None Include="shader\lightmapping\omniDepthShader.frag" />
+    <None Include="shader\lightmapping\omniDepthShader.vert" />
+    <None Include="shader\tessellation\control.tesc" />
+    <None Include="shader\tessellation\eval.tese" />
+    <None Include="shader\water\waterShader.geom" />
+    <None Include="shader\lightmapping\waterDepthShader.vert" />
+    <None Include="shader\lightmapping\waterDepthShader.frag" />
+    <None Include="shader\tessellation\controlDepth.tesc" />
+    <None Include="shader\tessellation\evalDepth.tese" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\scene.h">
@@ -110,6 +135,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

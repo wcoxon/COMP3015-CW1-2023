@@ -24,13 +24,6 @@ void Texture::load(std::string filePath) {
 
     glBindTexture(GL_TEXTURE_2D, handle);
 
-    // set the texture wrapping/filtering options (on the currently bound texture object)
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-
     int width, height, nrChannels;
     unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &nrChannels,3);
     if (data){
@@ -199,18 +192,8 @@ void Model::loadFileModel(std::string filePath) {
 }
 
 void Model::drawModel() {
-    //use this model's associated shading
-    //program->use();
-    //update mvp uniforms
-    //program->setUniform("view", sceneCamera.view);
 
     program->setUniform("model", transform);
-
-    //update point lights info
-    //program->setUniform("lights[0].transform", pointLights[0]->transform);
-
-    //update time
-    //program->setUniform("time", time);
 
     //set material uniforms from model info
     program->setUniform("mtl.ambientReflectivity", mtl.ambientReflectivity);
@@ -233,7 +216,7 @@ void Model::drawModel() {
     //draw model
     glBindVertexArray(vaoHandle);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]);
-    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+    glDrawElements(drawMode, indicesCount, GL_UNSIGNED_INT, 0);
 }
 
 /*

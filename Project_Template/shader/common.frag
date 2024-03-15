@@ -65,7 +65,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
     
     directionalLight dirLight = directionalLights[0];
     
-    float reflectedLight = 0;
+    vec4 reflectedLight = vec4(0);
 
     for(int stepNum = 0; stepNum < steps; stepNum++)
     {
@@ -106,7 +106,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
 
 
             if((depthCoords.z-0.01) < lightDepth){
-                reflectedLight += scatterPerUnit*stepNum*stride*absorption*lightAttenuation*pLight.lightIntensity;
+                reflectedLight.rgb += scatterPerUnit*stepNum*stride*absorption*lightAttenuation*pLight.lightIntensity*pLight.lightColour;
             }
 
         }
@@ -114,7 +114,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
     }
     float transmittance = exp(-fragDistance*density);
     float opacity = clamp(transmittance,0,1); //clamp(dist*absorbPerUnit,0,1);
-    return vec4(clamp(reflectedLight,0,1)*reflectColour,opacity);
+    return vec4(reflectedLight.rgb*reflectColour,opacity);
 }
 
 float phongSpecular(vec3 lightDir,vec3 viewDir,vec3 fragNormal){

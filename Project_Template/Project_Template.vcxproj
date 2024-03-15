@@ -146,6 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="helper\glslprogram.cpp" />
     <ClCompile Include="helper\glutils.cpp" />
@@ -162,13 +163,36 @@
     <None Include="shader\basic_uniform.geom" />
     <None Include="shader\basic_uniform.vert" />
     <None Include="shader\common.frag" />
+    <None Include="shader\lightmapping\depthShader.frag" />
+    <None Include="shader\lightmapping\depthShader.geom" />
+    <None Include="shader\lightmapping\depthShader.vert" />
+    <None Include="shader\lightmapping\directionalDepthShader.geom" />
+    <None Include="shader\lightmapping\omniDepthShader.frag" />
+    <None Include="shader\lightmapping\omniDepthShader.geom" />
+    <None Include="shader\lightmapping\omniDepthShader.vert" />
+    <None Include="shader\lightmapping\waterDepthShader.frag" />
+    <None Include="shader\lightmapping\waterDepthShader.vert" />
     <None Include="shader\post.frag" />
     <None Include="shader\skyboxShader.frag" />
     <None Include="shader\skyboxShader.vert" />
+    <None Include="shader\skybox\post.frag" />
+    <None Include="shader\skybox\skyboxShader.frag" />
+    <None Include="shader\skybox\skyboxShader.vert" />
+    <None Include="shader\standard\basic_uniform.frag" />
+    <None Include="shader\standard\basic_uniform.geom" />
+    <None Include="shader\standard\basic_uniform.vert" />
+    <None Include="shader\tessellation\control.tesc" />
+    <None Include="shader\tessellation\controlDepth.tesc" />
+    <None Include="shader\tessellation\eval.tese" />
+    <None Include="shader\tessellation\evalDepth.tese" />
     <None Include="shader\waterShader.frag" />
     <None Include="shader\waterShader.vert" />
+    <None Include="shader\water\waterShader.frag" />
+    <None Include="shader\water\waterShader.geom" />
+    <None Include="shader\water\waterShader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="helper\glslprogram.h" />
     <ClInclude Include="helper\glutils.h" />
     <ClInclude Include="helper\scene.h" />

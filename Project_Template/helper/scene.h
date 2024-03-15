@@ -1,6 +1,16 @@
 #pragma once
 
+
 #include <glm/glm.hpp>
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "Camera.h"
+#include "Mesh.h";
+
+using std::vector;
 
 class Scene
 {
@@ -10,6 +20,9 @@ protected:
 public:
     int width;
     int height;
+
+    Camera sceneCamera;
+    vector<Model*> sceneModels;
 
 	Scene() : m_animate(true), width(800), height(600) { }
 	virtual ~Scene() {}

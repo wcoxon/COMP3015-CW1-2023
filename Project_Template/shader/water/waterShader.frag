@@ -70,8 +70,8 @@ void main()
         vec2 waterV2 = vec2(-0.01,0.05);
 
         vec3 normalMapSamples[2] = {
-            texture(normalMap,gTex+waterV1*time).xyz*2.0-1.0,
-            texture(normalMap,gTex+waterV2*time).xyz*2.0-1.0
+            texture(normalMap,gPos.xz/20.0f+waterV1*time).xyz*2.0-1.0,
+            texture(normalMap,gPos.xz/20.0f+waterV2*time).xyz*2.0-1.0
         };
     
         vec3 T = cross(gNor,vec3(0,0,1));
@@ -88,16 +88,14 @@ void main()
 
         vec3 viewDir = normalize(gPos-viewPos);
 
-        FragColor = texture(skybox,reflect(viewDir,worldNor));//vec4(computeLight(gPos,gNor),1)*texture(colourTexture,gTex);
+        //vec4 viewSpacePos = view*model*vec4(gPos,1.0);
+        //float distanceApparently = viewSpacePos.z; ?
 
+        FragColor =  vec4(computeLight(gPos,normal),1)*texture(colourTexture,gTex);// texture(skybox,reflect(viewDir,worldNor));//vec4(computeLight(gPos,gNor),1)*texture(colourTexture,gTex);
 
-        //vec4 volumetric =  volumetricLight(.5,gPos);
-        
-        //absorb fragment light through fog
-        //FragColor *= volumetric.w;
-
-        //add scattered light from fog
-        //FragColor += vec4(volumetric.xyz,0);
+        vec4 volumetric =  volumetricLight(1.5,gPos);
+        FragColor *= volumetric.w;
+        FragColor += vec4(volumetric.xyz,0);
 
     }
     else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);

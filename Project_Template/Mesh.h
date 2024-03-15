@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include "glm/glm.hpp"
-#include "helper/scene.h"
+//#include "helper/scene.h"
 #include <vector>
 #include <fstream>
 #include <glad/glad.h>
@@ -36,7 +36,7 @@ public:
     GLuint vaoHandle;
     GLuint vboHandles[2];
 
-
+    GLuint drawMode = GL_TRIANGLES;
     //std::vector<Texture> textures;
 
     Texture colourTexture{ Texture(glm::vec3(1.0f)) };

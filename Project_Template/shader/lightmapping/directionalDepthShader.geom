@@ -13,7 +13,7 @@ uniform struct DirectionalLight{
 
 //out vec3 lightPos;
 out float dist;
-out vec4 FragPos; // FragPos from GS (output per emitvertex)
+//out vec4 FragPos; // FragPos from GS (output per emitvertex)
 //vec4 FragPos;
 void main()
 {

@@ -64,9 +64,9 @@ void main()
 
         FragColor = vec4(computeLight(gPos,normal),1)*texture(colourTexture,gTex);
 
-        //vec4 volumetric =  volumetricLight(.5,gPos);
-        //FragColor *= volumetric.w;
-        //FragColor += vec4(volumetric.xyz,0);
+        vec4 volumetric =  volumetricLight(1.5,gPos);
+        FragColor *= volumetric.w;
+        FragColor += vec4(volumetric.xyz,0);
     }
     else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);
 }
