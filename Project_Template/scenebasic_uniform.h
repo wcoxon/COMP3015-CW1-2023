@@ -6,34 +6,37 @@
 #include <glad/glad.h>
 #include "helper/glslprogram.h"
 
+#include <GLFW/glfw3.h>
 #include "helper/glslprogram.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
 #include "Camera.h"
 #include "Mesh.h"
 
 using std::vector;
 using glm::vec3;
+using glm::mat4;
 
 struct DirectionalLight {
 
-    glm::vec3 colour{ glm::vec3(1) };
+    vec3 colour{ vec3(1) };
     float intensity{ .3 };
 
     float far{ 60 };
     float span{ 50 };
-    glm::mat4 projection{ glm::ortho(-span, span, -span, span, 0.f, far) };
-    glm::mat4 view{ glm::mat4(1.0) };
+    mat4 projection{ glm::ortho(-span, span, -span, span, 0.f, far) };
+    mat4 view{ mat4(1.0) };
 };
 
 struct PointLight {
     float intensity{ 10 };
     float far{ 50 };
 
-    glm::vec3 colour{ glm::vec3(1) };
+    vec3 colour{ vec3(1) };
 
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.f, 0.f, far);
-    glm::mat4 transform{ glm::mat4(1.0) };
+    mat4 projection = glm::perspective(glm::radians(90.0f), 1.f, 0.f, far);
+    mat4 transform{ mat4(1.0) };
 
     PointLight() {}
 };

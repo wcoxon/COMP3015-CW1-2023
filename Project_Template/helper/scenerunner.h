@@ -1,7 +1,8 @@
 #include <glad/glad.h>
-#include "scene.h"
 #include <GLFW/glfw3.h>
 #include "glutils.h"
+
+#include "glm/glm.hpp"
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
@@ -11,7 +12,29 @@
 #include <fstream>
 #include <iostream>
 
+#include "scene.h"
+#include "Camera.h"
+
 using glm::vec3;
+
+
+
+Scene* mainScene;
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    //update viewport size when resizing the window
+    // 
+    //mainCamera->projection = glm::perspective(45.0f, (float)width / (float)height, 1.0f, mainCamera->far);
+    //glViewport(0, 0, width, height);
+    //mainScene->width = width;
+    //mainScene->height = height;
+    //mainScene->sceneCamera.projection = glm::perspective(45.0f, (float)width / (float)height, 1.0f, mainScene->sceneCamera.far);
+    mainScene->resize(width, height);
+
+}
+
+
 
 class SceneRunner {
 private:
@@ -55,6 +78,8 @@ public:
         // Get framebuffer size
         glfwGetFramebufferSize(window, &fbw, &fbh);
 
+        
+
         // Load the OpenGL functions.
         if(!gladLoadGL()) { exit(-1); }
 
@@ -73,6 +98,9 @@ public:
     }
 
     int run(Scene & scene) {
+        
+        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
         scene.setDimensions(fbw, fbh);
         scene.initScene();
         scene.resize(fbw, fbh);
@@ -120,8 +148,10 @@ private:
     }
 
 
-    glm::vec3 getInputVector(GLFWwindow* window) {
-        glm::vec3 inputVector = glm::vec3(0);
+    vec3 getInputVector(GLFWwindow* window) {
+
+        vec3 inputVector = vec3(0);
+
         if (glfwGetKey(window, GLFW_KEY_W)) {
             inputVector.z -= 1;
         }
@@ -134,50 +164,69 @@ private:
         if (glfwGetKey(window, GLFW_KEY_D)) {
             inputVector.x += 1;
         }
-        if (inputVector==glm::vec3(0)) return glm::vec3(0);
-        return glm::normalize(inputVector);
+
+        if (inputVector != vec3(0)) inputVector = glm::normalize(inputVector);
+
+        return inputVector;
     }
 
     void mainLoop(GLFWwindow * window, Scene & scene) {
+
+        mainScene = &scene;
 
         double lastFrameTime = glfwGetTime();
 
         Model* boat = scene.sceneModels[4];
 
+        float boatAcceleration = 20.f;
+        float boatDeceleration = -20.0f;
+
+        vec3 boatVelocity = vec3(0);
+
+
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
 			
+            //calculating delta time
             double currentFrameTime = glfwGetTime();
             double deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
 
-
-            //movement vector relative to camera
-            //velocity and accel/decel
-
+            //movement stuff
             vec3 inputVector = getInputVector(window);
 
             vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0));
             directionVector.y = 0;
+
+            vec3 accelerationVector;
+
             if (directionVector != vec3(0)) {
+                // accelerate
+
                 directionVector = glm::normalize(directionVector);
 
-                boat->direction = directionVector;
-            }
-            //directionVector = glm::normalize(directionVector);
+                accelerationVector = (float)deltaTime * boatAcceleration * directionVector;
 
-            vec3 movementVector = (float)deltaTime * 10.0f * directionVector;
+                boatVelocity += accelerationVector;
+
+                boat->direction = glm::normalize(boatVelocity);
+            }
+            else if(boatVelocity!=vec3(0)){
+                //slow down
+
+                boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)+boatDeceleration*(float)deltaTime,0.f);
+
+            }
+
+            vec3 movementVector = (float)deltaTime * boatVelocity;
 
             boat->translate(movementVector);
 
-            
 
-            if (glfwGetKey(window, GLFW_KEY_1)) {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            }
-            if (glfwGetKey(window, GLFW_KEY_2)) {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            }
+            if (glfwGetKey(window, GLFW_KEY_1)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            
+            if (glfwGetKey(window, GLFW_KEY_2)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            
 
             scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));
 

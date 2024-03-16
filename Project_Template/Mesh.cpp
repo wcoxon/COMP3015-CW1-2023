@@ -2,7 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-Texture::Texture( glm::vec3 defaultColour) {
+Texture::Texture( vec3 defaultColour) {
     glGenTextures(1, &handle);
     glBindTexture(GL_TEXTURE_2D, handle);
 
@@ -37,8 +37,8 @@ void Texture::load(std::string filePath) {
     stbi_image_free(data);
 }
 
-std::vector<std::string> split(std::string str, char delimiter) {
-    std::vector<std::string> buffer;
+vector<std::string> split(std::string str, char delimiter) {
+    vector<std::string> buffer;
 
     //i moves through the input by hopping to the next delimiter found
     for (int i = 0; i < str.length(); i = str.find(delimiter, i) + 1) {
@@ -54,14 +54,14 @@ std::vector<std::string> split(std::string str, char delimiter) {
     return buffer;
 }
 
-void loadOBJ(std::ifstream* fileStream, std::vector<GLuint>* indices, std::vector<glm::vec3>* vertexPositions, std::vector<glm::vec3>* vertexNormals, std::vector<glm::vec2>* vertexUVs) {
+void loadOBJ(std::ifstream* fileStream, vector<GLuint>* indices, vector<vec3>* vertexPositions, vector<vec3>* vertexNormals, vector<glm::vec2>* vertexUVs) {
 
-    std::vector<glm::vec3> facePositions;
-    std::vector<glm::vec3> faceNormals;
-    std::vector<glm::vec2> textureCoords;
+    vector<vec3> facePositions;
+    vector<vec3> faceNormals;
+    vector<glm::vec2> textureCoords;
 
     std::string line;
-    std::vector<std::string> lineSplit;
+    vector<std::string> lineSplit;
 
     bool quads = false;
     bool textured = false;
@@ -123,7 +123,7 @@ Model::Model() {
     glGenBuffers(2, vboHandles);
 }
 
-void Model::loadBufferData(std::vector<glm::vec3> positionData, std::vector<glm::vec3> normalsData, std::vector<glm::vec2> textureData, std::vector<GLuint> indices) {
+void Model::loadBufferData(vector<vec3> positionData, vector<vec3> normalsData, vector<glm::vec2> textureData, vector<GLuint> indices) {
     //bind the first VBO and initialise empty buffer to store positions and colour data
     glBindBuffer(GL_ARRAY_BUFFER, vboHandles[0]);
     glBufferData(GL_ARRAY_BUFFER, (positionData.size()*3 + normalsData.size()*3 + textureData.size()*2) * sizeof(float), NULL, GL_STATIC_DRAW);
@@ -131,19 +131,19 @@ void Model::loadBufferData(std::vector<glm::vec3> positionData, std::vector<glm:
     glBufferSubData(
         GL_ARRAY_BUFFER,
         0,
-        positionData.size() * sizeof(glm::vec3),
+        positionData.size() * sizeof(vec3),
         &positionData[0]
     );
     //load normals into buffer 0 after positions
     glBufferSubData(
         GL_ARRAY_BUFFER,
-        positionData.size() * sizeof(glm::vec3),
-        normalsData.size() * sizeof(glm::vec3),
+        positionData.size() * sizeof(vec3),
+        normalsData.size() * sizeof(vec3),
         &normalsData[0]
     );
     glBufferSubData(
         GL_ARRAY_BUFFER,
-        (positionData.size()+normalsData.size()) * sizeof(glm::vec3),
+        (positionData.size()+normalsData.size()) * sizeof(vec3),
         textureData.size() * sizeof(glm::vec2),
         &textureData[0]
     );
@@ -157,22 +157,20 @@ void Model::loadBufferData(std::vector<glm::vec3> positionData, std::vector<glm:
     //bind buffer data to vertex shader attributes and enable
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(positionData.size() * sizeof(glm::vec3)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(positionData.size() * sizeof(vec3)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, (void*)((positionData.size() + normalsData.size()) * sizeof(glm::vec3)));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, (void*)((positionData.size() + normalsData.size()) * sizeof(vec3)));
     glEnableVertexAttribArray(3);
 
-    //colourTexture.load("./media/textures/blanktexture.jpg");
-    //loadTexture("./media/textures/blanktexture.jpg");
     glBindVertexArray(0);
 }
 
 void Model::loadFileModel(std::string filePath) {
 
-    std::vector<glm::vec3> positionData;
-    std::vector<glm::vec3> normalsData;
-    std::vector<glm::vec2> textureData;
-    std::vector<GLuint> indices;
+    vector<vec3> positionData;
+    vector<vec3> normalsData;
+    vector<glm::vec2> textureData;
+    vector<GLuint> indices;
 
     std::cout << "loading model from file '" << filePath << "'" << std::endl;
     std::ifstream fileStream(filePath, std::ios::in);

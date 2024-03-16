@@ -22,7 +22,7 @@ uniform float time;
 
 uniform sampler2D colourTexture;
 uniform sampler2D normalMap;
-uniform samplerCube skybox;
+layout(binding = 4) uniform samplerCube skybox;
 
 uniform struct pointLight {
     int lightType;

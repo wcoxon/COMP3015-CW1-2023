@@ -20,8 +20,9 @@ using std::endl;
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-
+using std::vector;
 using glm::vec3;
+using glm::mat4;
 
 SceneBasic_Uniform::SceneBasic_Uniform() : time(0.0f) {}
 
@@ -58,31 +59,12 @@ unsigned int loadCubemap(vector<std::string> faces)
     return textureID;
 }
 
-Model* skybox;
 
-Model* ball;
-Model* table;
-Model* wall;
-Model* boat;
-
-void SceneBasic_Uniform::initScene()
-{
-    sceneCamera.view = glm::lookAt(vec3(0, 20, 40), vec3(0), vec3(0, 1, 0));
-
-    glFrontFace(GL_CW);
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.f, 0.f, 0.f, 1.f);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glPatchParameteri(GL_PATCH_VERTICES, 4);
-
-    compile();
-
-    Model* water = new Model();
-    //generate patches
-    std::vector<glm::vec3> quadVerts = {};
-    std::vector<glm::vec3> quadNormals = {};
-    std::vector<glm::vec2> quadTexCoords = {};
-    std::vector<GLuint> quadIndices = {};
+void generatePatches(Model* model) {
+    vector<vec3> quadVerts = {};
+    vector<vec3> quadNormals = {};
+    vector<glm::vec2> quadTexCoords = {};
+    vector<GLuint> quadIndices = {};
 
     float patchesX = 32;
     float patchesZ = 32;
@@ -95,15 +77,15 @@ void SceneBasic_Uniform::initScene()
             float patchTop = -patchesZ / 2.0f + patchZ;
             float patchBottom = patchTop + 1;
 
-            glm::vec3 patchBL = { patchLeft,0,patchBottom };
-            glm::vec3 patchBR = { patchRight,0,patchBottom };
-            glm::vec3 patchTL = { patchLeft,0,patchTop};
-            glm::vec3 patchTR = { patchRight,0,patchTop};
+            vec3 patchBL = { patchLeft,0,patchBottom };
+            vec3 patchBR = { patchRight,0,patchBottom };
+            vec3 patchTL = { patchLeft,0,patchTop };
+            vec3 patchTR = { patchRight,0,patchTop };
 
             quadIndices.push_back(quadVerts.size());
             quadVerts.push_back(patchBL);
             quadNormals.push_back({ 0,1,0 });
-            quadTexCoords.push_back({ 0,0});
+            quadTexCoords.push_back({ 0,0 });
 
 
             quadIndices.push_back(quadVerts.size());
@@ -125,49 +107,60 @@ void SceneBasic_Uniform::initScene()
         }
     }
 
-    water->indicesCount = quadIndices.size();
-    water->loadBufferData(quadVerts, quadNormals, quadTexCoords, quadIndices);
+    model->indicesCount = quadIndices.size();
+    model->loadBufferData(quadVerts, quadNormals, quadTexCoords, quadIndices);
+    model->drawMode = GL_PATCHES;
+}
 
-    water->normalMap.load("./media/textures/0001.png");
-    water->transform = glm::translate(glm::mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(5));
+Model* skybox;
+
+Model* ball;
+Model* table;
+Model* wall;
+Model* boat;
+
+//flat shading, ambient, diffuse, specular, power, perfragment
+Material waterMaterial{ false, .1f, .1f, 1.f, 32 };
+Material wallMaterial{ true, .1f, 1.5, 0.f };
+
+void SceneBasic_Uniform::initScene()
+{
+    glFrontFace(GL_CW);
+    glEnable(GL_DEPTH_TEST);
+    //glClearColor(0.f, 0.f, 0.f, 1.f);
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+    compile();
+
+    Model* water = new Model();
     water->program = &waterProg;
-    water->mtl.diffuseReflectivity = 0.1f;
-    water->mtl.specularReflectivity = 1.0f;
-    water->mtl.specularPower = 32;
-    water->drawMode = GL_PATCHES;
+    generatePatches(water);
+    water->normalMap.load("./media/textures/0001.png");
+    water->transform = glm::translate(mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), vec3(5));
+    water->mtl = waterMaterial;
     sceneModels.push_back(water);
     
     wall = new Model();
     wall->program = &prog;
     wall->loadFileModel("./media/wall.obj");
-    //wall->colourTexture.load("./media/textures/pebblesD.jpg"); //for colour
     wall->normalMap.load("./media/textures/pebblesNormal.jpg");
-    wall->transform = glm::translate(glm::mat4(1.0), vec3(-1, -1, -20)) *glm::rotate(glm::mat4(1.0), glm::radians(-90.f), glm::vec3(0, 1, 0))* glm::scale(glm::mat4(1.0), vec3(5));
-
-    wall->mtl.specularReflectivity = 0.f;
-    wall->mtl.diffuseReflectivity = 1.5f;
-    wall->mtl.shadeFlat = true;
+    wall->transform = glm::translate(glm::mat4(1.0), vec3(-1, -1, -20)) *glm::rotate(glm::mat4(1.0), glm::radians(-90.f), vec3(0, 1, 0))* glm::scale(glm::mat4(1.0), vec3(5));
+    wall->mtl = wallMaterial;
     sceneModels.push_back(wall);
     
-
     table = new Model();
     table->program = &prog;
-    table->transform = 
-        glm::translate(glm::mat4(1.0), vec3(-1, 0, -5)) * 
-        glm::scale(glm::mat4(1.0), vec3(3));
     table->loadFileModel("./media/table.obj");
     table->colourTexture.load("./media/textures/wood.jpg");
-    table->mtl.specularReflectivity = 0.4f;
-    table->mtl.diffuseReflectivity = 1.f;
-    table->mtl.shadeFlat = true;
+    table->transform = glm::translate(glm::mat4(1.0), vec3(-1, 0, -5)) * glm::scale(glm::mat4(1.0), vec3(3));
+    table->mtl = wallMaterial;
     sceneModels.push_back(table);
 
     ball = new Model();
     ball->program = &prog;
     ball->loadFileModel("./media/icosphere.obj");
-    ball->transform =
-        glm::translate(glm::mat4(1.0), vec3(-2, 1, 5))*
-        glm::scale(glm::mat4(1.0),glm::vec3(1.5));
+    ball->position = vec3(-2, 1, 5);
+    ball->scale = vec3(5.0);
     sceneModels.push_back(ball);
 
     boat = new Model();
@@ -175,21 +168,19 @@ void SceneBasic_Uniform::initScene()
     boat->loadFileModel("./media/boat.obj");
     boat->position = vec3(2, 1, 3);
     boat->scale = vec3(1.5);
-    //boat->transform =
-        //glm::translate(glm::mat4(1.0), vec3(2, 1, 3)) *
-        //glm::scale(glm::mat4(1.0), glm::vec3(1.5));
     boat->mtl.shadeFlat = true;
     sceneModels.push_back(boat);
 
     skybox = new Model();
-    std::vector<glm::vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
-    std::vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
-
+    vector<vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
+    vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
+    vector<std::string> skyboxTexturePaths = { "G:/skybox/skybox/right.jpg","G:/skybox/skybox/left.jpg","G:/skybox/skybox/top.jpg","G:/skybox/skybox/bottom.jpg","G:/skybox/skybox/front.jpg","G:/skybox/skybox/back.jpg" };
+    //
     skybox->program = &skyboxProg;
     glBindVertexArray(skybox->vaoHandle);
     //
     glBindBuffer(GL_ARRAY_BUFFER, skybox->vboHandles[0]);
-    glBufferData(GL_ARRAY_BUFFER, skyquadVerts.size() * sizeof(glm::vec3), skyquadVerts.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, skyquadVerts.size() * sizeof(vec3), skyquadVerts.data(), GL_STATIC_DRAW);
     //
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
@@ -197,7 +188,6 @@ void SceneBasic_Uniform::initScene()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox->vboHandles[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyquadIndices.size() * sizeof(GLuint), skyquadIndices.data(), GL_STATIC_DRAW);
     //
-    std::vector<std::string> skyboxTexturePaths = { "G:/skybox/skybox/right.jpg","G:/skybox/skybox/left.jpg","G:/skybox/skybox/top.jpg","G:/skybox/skybox/bottom.jpg","G:/skybox/skybox/front.jpg","G:/skybox/skybox/back.jpg" };
     int skyboxTextureID = loadCubemap(skyboxTexturePaths);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID);
@@ -228,8 +218,7 @@ void SceneBasic_Uniform::initScene()
     pointLights.push_back(new PointLight());
     pointLights[1]->transform = glm::translate(glm::mat4(1.0),vec3(8,-4,-5));
     pointLights[1]->colour = vec3(0,0.5,1);
-    //pointLights[1]->intensity = 0;
-    
+
 
     glGenFramebuffers(1, &dirShadowFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, dirShadowFBO);
@@ -249,7 +238,7 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
     directionalLights.push_back(new DirectionalLight());
-    directionalLights[0]->view =glm::lookAt(glm::vec3(-20.f, 20.f, 20.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.0f, 1.0f, 0.0f));
+    directionalLights[0]->view =glm::lookAt(vec3(-20.f, 20.f, 20.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
 
 
     shadowProg.use();
@@ -294,11 +283,6 @@ void SceneBasic_Uniform::initScene()
     prog.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     prog.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
 
-    prog.setUniform("colourTexture", 0);
-    prog.setUniform("normalMap", 1);
-    prog.setUniform("pointDepthMaps", 2);
-    prog.setUniform("directionalDepthMaps", 3);
-
     // water shader
     waterProg.use();
     cout << "water shaders:" << endl;
@@ -325,17 +309,10 @@ void SceneBasic_Uniform::initScene()
     waterProg.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     waterProg.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
 
-    waterProg.setUniform("colourTexture", 0);
-    waterProg.setUniform("normalMap", 1);
-    waterProg.setUniform("pointDepthMaps", 2);
-    waterProg.setUniform("directionalDepthMaps", 3);
-    waterProg.setUniform("skybox", 4);
-
     //skybox shader
     skyboxProg.use();
     skyboxProg.setUniform("view", sceneCamera.view);
     skyboxProg.setUniform("projection", sceneCamera.projection);
-    skyboxProg.setUniform("skybox", 4);
 
     skyboxProg.setUniform("directionalLights[0].lightIntensity", directionalLights[0]->intensity);
     skyboxProg.setUniform("directionalLights[0].lightColour", directionalLights[0]->colour);
@@ -343,7 +320,6 @@ void SceneBasic_Uniform::initScene()
     skyboxProg.setUniform("directionalLights[0].project", directionalLights[0]->projection);
     skyboxProg.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     skyboxProg.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
-    skyboxProg.setUniform("directionalDepthMaps", 3);
 
     waterDirectionalShadowPass.use();
 
@@ -419,12 +395,10 @@ void SceneBasic_Uniform::update( float t )
 {
     time = t;
 
-    float spinAngle = glm::radians(t * 45.f);
+    ball->position.y = sin(ball->position.x / 2.f + time * 2.f);
+    ball->updateMatrix();
 
-    float radius = 40;
-    float height = 20;
-
-
+    boat->position.y = sin(boat->position.x / 2.f + time * 2.f);
     boat->updateMatrix();
 }
 
@@ -439,14 +413,8 @@ void SceneBasic_Uniform::render()
     //clear depth buffer (for shadows to write over)
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    //switch over to shadow shader program
-    //shadowProg.use();
-
     //move a light around
-    //pointLights[0]->transform = glm::translate(glm::mat4(1.0), glm::vec3(glm::sin(time) * -10.0f, -5,  9.0f)); //glm::cos(time) * -10.0f));
-    pointLights[0]->transform = glm::translate(glm::mat4(1.0), glm::vec3(glm::sin(time) * -10.0f, -9,  9.0f));
-    //update moving light uniform
-    //shadowProg.setUniform("lights[0].transform", pointLights[0]->transform);
+    pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(glm::sin(time) * -10.0f, -9,  9.0f));
 
     for (Model* model : sceneModels) {
         
@@ -458,7 +426,6 @@ void SceneBasic_Uniform::render()
             waterPointShadowPass.setUniform("model", model->transform);
             waterPointShadowPass.setUniform("time", time);
             waterPointShadowPass.setUniform("lights[0].transform", pointLights[0]->transform);
-            //shadowProg.setUniform("isWater", true);
         }
         else {
             shadowProg.use();
@@ -525,6 +492,9 @@ void SceneBasic_Uniform::render()
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glClear(GL_COLOR_BUFFER_BIT);
+
+
+    //draw post fx
     //glDepthMask(GL_FALSE);
     //skybox->program->use();
     //skybox->program->setUniform("view", sceneCamera.view);
@@ -533,21 +503,18 @@ void SceneBasic_Uniform::render()
     //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     //glDepthMask(GL_TRUE);
     
-    table->transform = glm::translate(glm::mat4(1.0), vec3(cos(0) * 10, sin(cos(0) * 10 / 2.f * 2.f), -1)) * glm::scale(glm::mat4(1.0), vec3(3));
-    ball->transform = glm::translate(glm::mat4(1.0), vec3(-2, sin(-2/2.f + time * 2.f), 5));
-
-    boat->position.y = sin(boat->position.x / 2.f + time * 2.f);
-
 
     for (Model* model : sceneModels) {
         model->program->use();
         model->program->setUniform("view", sceneCamera.view);
+        model->program->setUniform("projection", sceneCamera.projection);
         model->program->setUniform("lights[0].transform", pointLights[0]->transform);
         model->program->setUniform("time", time);
 
         model->drawModel();
     }
 
+    //draw skybox
     glDepthFunc(GL_LEQUAL);
     skybox->program->use();
     skybox->program->setUniform("view", sceneCamera.view);
@@ -563,5 +530,6 @@ void SceneBasic_Uniform::resize(int w, int h)
 {
     width = w;
     height = h;
+    sceneCamera.projection = glm::perspective(45.0f, (float)width / (float)height, 1.0f, sceneCamera.far);
     glViewport(0,0,w,h);
 }
