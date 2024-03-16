@@ -18,7 +18,7 @@ using glm::vec3;
 struct DirectionalLight {
 
     glm::vec3 colour{ glm::vec3(1) };
-    float intensity{ .4f };
+    float intensity{ .3 };
 
     float far{ 60 };
     float span{ 50 };
@@ -28,7 +28,7 @@ struct DirectionalLight {
 
 struct PointLight {
     float intensity{ 10 };
-    float far{ 20 };
+    float far{ 50 };
 
     glm::vec3 colour{ glm::vec3(1) };
 

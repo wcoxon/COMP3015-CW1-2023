@@ -84,7 +84,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
         vec3 depthCoords = ((lightSpacePos.xyz / lightSpacePos.w)+1)/2.0;
         float lightDepth = texture(directionalDepthMaps,depthCoords.xyz).r;
 
-        //if the directional light gets here
+        //if the directional light gets here, light up
         if((depthCoords.z-0.01) < lightDepth){
             reflectedLight += scatterPerUnit*stepNum*stride*absorption*dirLight.lightIntensity;
         }
@@ -104,7 +104,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
             
             float lightDepth = texture(pointDepthMaps, vec4(lightToFrag,pLight.textureID)).r * pLight.far_plane;
 
-
+            //if point light gets here, light up
             if((depthCoords.z-0.01) < lightDepth){
                 reflectedLight.rgb += scatterPerUnit*stepNum*stride*absorption*lightAttenuation*pLight.lightIntensity*pLight.lightColour;
             }
@@ -113,7 +113,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
 
     }
     float transmittance = exp(-fragDistance*density);
-    float opacity = clamp(transmittance,0,1); //clamp(dist*absorbPerUnit,0,1);
+    float opacity = clamp(transmittance,0,1);
     return vec4(reflectedLight.rgb*reflectColour,opacity);
 }
 
@@ -130,9 +130,10 @@ vec3 getViewDirection(){
     return normalize(gPos-viewPos);
 }
 
-vec3 computeLight(vec3 Pos, vec3 Nor){
+//Pos (world position), Nor (world normal)
+vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 
-    vec3 worldNor = normalize(transpose(inverse(mat3(model)))*Nor);
+    vec3 worldNor = Nor;//normalize(transpose(inverse(mat3(model)))*Nor);
 
 
     vec3 viewToFrag = Pos-viewPos;
@@ -198,6 +199,12 @@ vec3 computeLight(vec3 Pos, vec3 Nor){
             Light+=light.lightColour*light.lightIntensity*Ambient;
         }
      }
+
+     Light *= surfaceColour.rgb;
+
+     vec4 volumetric = volumetricLight(1.5f, Pos);
+     Light *= volumetric.w;
+     Light += volumetric.rgb;
 
      return clamp(Light,0,1);
 }

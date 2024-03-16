@@ -11,6 +11,8 @@
 #include <fstream>
 #include <iostream>
 
+using glm::vec3;
+
 class SceneRunner {
 private:
     GLFWwindow * window;
@@ -117,9 +119,30 @@ private:
         }
     }
 
+
+    glm::vec3 getInputVector(GLFWwindow* window) {
+        glm::vec3 inputVector = glm::vec3(0);
+        if (glfwGetKey(window, GLFW_KEY_W)) {
+            inputVector.z -= 1;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S)) {
+            inputVector.z += 1;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A)) {
+            inputVector.x -= 1;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D)) {
+            inputVector.x += 1;
+        }
+        if (inputVector==glm::vec3(0)) return glm::vec3(0);
+        return glm::normalize(inputVector);
+    }
+
     void mainLoop(GLFWwindow * window, Scene & scene) {
 
         double lastFrameTime = glfwGetTime();
+
+        Model* boat = scene.sceneModels[4];
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
@@ -128,25 +151,35 @@ private:
             double deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
 
-            if (glfwGetKey(window, GLFW_KEY_W)) {
-                scene.sceneCamera.translate(glm::vec3(0, 0, 10*deltaTime));
+
+            //movement vector relative to camera
+            //velocity and accel/decel
+
+            vec3 inputVector = getInputVector(window);
+
+            vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0));
+            directionVector.y = 0;
+            if (directionVector != vec3(0)) {
+                directionVector = glm::normalize(directionVector);
+
+                boat->direction = directionVector;
             }
-            if (glfwGetKey(window, GLFW_KEY_S)) {
-                scene.sceneCamera.translate(glm::vec3(0, 0, -10 * deltaTime));
+            //directionVector = glm::normalize(directionVector);
+
+            vec3 movementVector = (float)deltaTime * 10.0f * directionVector;
+
+            boat->translate(movementVector);
+
+            
+
+            if (glfwGetKey(window, GLFW_KEY_1)) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }
-            if (glfwGetKey(window, GLFW_KEY_A)) {
-                scene.sceneCamera.translate(glm::vec3(10 * deltaTime, 0, 0));
-            }
-            if (glfwGetKey(window, GLFW_KEY_D)) {
-                scene.sceneCamera.translate(glm::vec3(-10 * deltaTime, 0, 0));
+            if (glfwGetKey(window, GLFW_KEY_2)) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
 
-            if (glfwGetKey(window, GLFW_KEY_Q)) {
-                scene.sceneCamera.rotate(glm::half_pi<float>() * deltaTime, glm::vec3(0, 1, 0));
-            }
-            if (glfwGetKey(window, GLFW_KEY_E)) {
-                scene.sceneCamera.rotate(-glm::half_pi<float>() * deltaTime, glm::vec3(0, 1, 0));
-            }
+            scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));
 
             scene.update(float(glfwGetTime()));
             scene.render();

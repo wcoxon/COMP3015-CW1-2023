@@ -4,6 +4,7 @@
 
 layout (triangles) in;
 
+//positions (local)
 in vec3 vPos[3];
 in vec3 vNor[3];
 in vec2 vTex[3];
@@ -11,6 +12,7 @@ in vec3 vColor[3];
 
 layout (triangle_strip, max_vertices = 3) out;
 
+//position (local)
 out vec3 gPos;
 out vec3 gNor;
 out vec2 gTex;
@@ -59,48 +61,13 @@ float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 Normal){
     return mtl.specularReflectivity*pow(max(dot(h,Normal),0),mtl.specularPower);
 }
 
+vec3 gouraudLighting(vec3 Pos, vec3 Nor){
+//careful don't leave this like this if you're reworking input pos to worldspace
+            vec3 worldVertexPos = (model*vec4(Pos,1)).xyz;
+            vec3 worldVertexNor = transpose(inverse(mat3(model)))*Nor;//localVertexNor;
 
-void main() {
-    gColor = vColor[0];
-
-    vec3 localViewPos = vec3(0,0,0);
-    vec3 worldViewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
-    
-    for(int x = 0; x<3;x++){
-
-        gPos = vPos[x];
-        gTex = vTex[x];
-
-        if(mtl.shadeFlat) {
-            //flat shading calculates face normal and assigns to all vertices
-            gNor = normalize(cross(vPos[1]-vPos[0],vPos[2]-vPos[0]));
-
-        }
-        else gNor = vNor[x];
-
-        if(gNor.y!=1){
-            //swivel tangent space from y axis
-            vec3 tangent = cross(vec3(0,1,0),gNor);
-            //vec3 tangent = vec3(-gNor.y,gNor.x,gNor.z);
-            vec3 bitangent = cross(gNor,tangent);
-            vec3 normal = gNor;
-            TBN = mat3(tangent,bitangent,normal);
-        }
-        else{
-            vec3 tangent = cross(vec3(0,0,1),gNor);
-            //vec3 tangent = vec3(-gNor.y,gNor.x,gNor.z);
-            vec3 bitangent = cross(gNor,tangent);
-            vec3 normal = gNor;
-            TBN = mat3(tangent,bitangent,normal);
-        }
-
-        //per-vertex lighting computation
-        if(!mtl.perFragment){
-
-        //careful don't leave this like this if you're reworking input pos to worldspace
-            vec3 worldVertexPos = (model*vec4(vPos[x],1)).xyz;
-            vec3 worldVertexNor = transpose(inverse(mat3(model)))*gNor;//localVertexNor;
-
+            
+            vec3 worldViewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
             vec3 viewDir = normalize(worldVertexPos-worldViewPos);//normalize(vPos[x]-viewPosition);
 
             vec3 Light = vec3(0);
@@ -161,8 +128,63 @@ void main() {
                     Light +=  light.lightIntensity*(Ambient + Diffuse + specular) * light.lightColour;
                 }
             }
+            return clamp(Light,0,1);
+         }
 
-            gLight = clamp(Light,0,1);
+
+void main() {
+    gColor = vColor[0];
+
+
+    // positions (world positions, so the calculated normal will be in world too, maybe world won't work idk)
+    vec3 pos1 = vPos[0];
+    vec3 pos2= vPos[1];
+    vec3 pos3= vPos[2];
+    // texture coordinates
+    vec2 uv1 = vTex[0];
+    vec2 uv2 = vTex[1];
+    vec2 uv3 = vTex[2];
+
+    //get the change in position over each edge
+    vec3 edge1 = pos2 - pos1;
+    vec3 edge2 = pos3 - pos1;
+    //get the change in texture coordinate over each edge
+    vec2 deltaUV1 = uv2 - uv1;
+    vec2 deltaUV2 = uv3 - uv1;
+
+
+    // normal vector
+    vec3 faceNormal = normalize(cross(edge1,edge2));
+
+    vec3 tangent;
+    vec3 bitangent;
+
+    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+    
+    tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+    tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+    tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+    //this fixes it?? ergh
+    bitangent = cross(tangent,faceNormal);
+
+    tangent = normalize(tangent);
+    bitangent = normalize(bitangent);
+
+    TBN = mat3(tangent,bitangent,faceNormal);
+
+    for(int x = 0; x<3;x++){
+
+        gPos = vPos[x];
+        gTex = vTex[x];
+
+        // use face normal or individuals
+        if(mtl.shadeFlat) gNor = faceNormal;
+        else gNor = vNor[x];
+
+        // per-vertex lighting computation
+        if(!mtl.perFragment){
+            gLight = gouraudLighting(gPos,gNor);
         }
         
         gl_Position = gl_in[x].gl_Position;

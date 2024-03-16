@@ -63,6 +63,7 @@ Model* skybox;
 Model* ball;
 Model* table;
 Model* wall;
+Model* boat;
 
 void SceneBasic_Uniform::initScene()
 {
@@ -77,16 +78,11 @@ void SceneBasic_Uniform::initScene()
     compile();
 
     Model* water = new Model();
-    //water->loadFileModel("./media/subdivplane.obj");
-    
-
-    //water->loadFileModel("./media/quad.obj");
-    //manually
+    //generate patches
     std::vector<glm::vec3> quadVerts = {};
     std::vector<glm::vec3> quadNormals = {};
     std::vector<glm::vec2> quadTexCoords = {};
     std::vector<GLuint> quadIndices = {};
-    //generate patches
 
     float patchesX = 32;
     float patchesZ = 32;
@@ -132,44 +128,58 @@ void SceneBasic_Uniform::initScene()
     water->indicesCount = quadIndices.size();
     water->loadBufferData(quadVerts, quadNormals, quadTexCoords, quadIndices);
 
-
     water->normalMap.load("./media/textures/0001.png");
     water->transform = glm::translate(glm::mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(5));
     water->program = &waterProg;
     water->mtl.diffuseReflectivity = 0.1f;
-    water->mtl.specularReflectivity = 0.5f;
+    water->mtl.specularReflectivity = 1.0f;
     water->mtl.specularPower = 32;
     water->drawMode = GL_PATCHES;
     sceneModels.push_back(water);
     
     wall = new Model();
-    wall->loadFileModel("./media/wall.obj");
-    //wall->colourTexture.load("./media/textures/pebblesD.jpg");
-    //wall->normalMap.load("./media/textures/pebblesNormal.jpg");
     wall->program = &prog;
+    wall->loadFileModel("./media/wall.obj");
+    //wall->colourTexture.load("./media/textures/pebblesD.jpg"); //for colour
+    wall->normalMap.load("./media/textures/pebblesNormal.jpg");
+    wall->transform = glm::translate(glm::mat4(1.0), vec3(-1, -1, -20)) *glm::rotate(glm::mat4(1.0), glm::radians(-90.f), glm::vec3(0, 1, 0))* glm::scale(glm::mat4(1.0), vec3(5));
+
     wall->mtl.specularReflectivity = 0.f;
-    wall->transform = glm::translate(glm::mat4(1.0), vec3(-1, -1, -20)) * glm::rotate(glm::mat4(1.0), glm::radians(-90.f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0),vec3(2));
+    wall->mtl.diffuseReflectivity = 1.5f;
     wall->mtl.shadeFlat = true;
     sceneModels.push_back(wall);
     
 
     table = new Model();
-    table->transform = glm::translate(glm::mat4(1.0), vec3(-1, 0, -5)) * glm::scale(glm::mat4(1.0), vec3(3));
+    table->program = &prog;
+    table->transform = 
+        glm::translate(glm::mat4(1.0), vec3(-1, 0, -5)) * 
+        glm::scale(glm::mat4(1.0), vec3(3));
     table->loadFileModel("./media/table.obj");
     table->colourTexture.load("./media/textures/wood.jpg");
-    table->program = &prog;
     table->mtl.specularReflectivity = 0.4f;
     table->mtl.diffuseReflectivity = 1.f;
     table->mtl.shadeFlat = true;
     sceneModels.push_back(table);
 
     ball = new Model();
-    ball->loadFileModel("./media/icosphere.obj");
     ball->program = &prog;
+    ball->loadFileModel("./media/icosphere.obj");
     ball->transform =
         glm::translate(glm::mat4(1.0), vec3(-2, 1, 5))*
         glm::scale(glm::mat4(1.0),glm::vec3(1.5));
     sceneModels.push_back(ball);
+
+    boat = new Model();
+    boat->program = &prog;
+    boat->loadFileModel("./media/boat.obj");
+    boat->position = vec3(2, 1, 3);
+    boat->scale = vec3(1.5);
+    //boat->transform =
+        //glm::translate(glm::mat4(1.0), vec3(2, 1, 3)) *
+        //glm::scale(glm::mat4(1.0), glm::vec3(1.5));
+    boat->mtl.shadeFlat = true;
+    sceneModels.push_back(boat);
 
     skybox = new Model();
     std::vector<glm::vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
@@ -218,6 +228,7 @@ void SceneBasic_Uniform::initScene()
     pointLights.push_back(new PointLight());
     pointLights[1]->transform = glm::translate(glm::mat4(1.0),vec3(8,-4,-5));
     pointLights[1]->colour = vec3(0,0.5,1);
+    //pointLights[1]->intensity = 0;
     
 
     glGenFramebuffers(1, &dirShadowFBO);
@@ -238,25 +249,21 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
     directionalLights.push_back(new DirectionalLight());
-    directionalLights[0]->view =glm::lookAt(glm::vec3(-20.f, 20.f, -20.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.0f, 1.0f, 0.0f));
+    directionalLights[0]->view =glm::lookAt(glm::vec3(-20.f, 20.f, 20.f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 
     shadowProg.use();
     shadowProg.printActiveUniforms();
-
     //set point light uniforms
     shadowProg.setUniform("lights[0].project", shadowProj);
     shadowProg.setUniform("lights[0].transform", pointLights[0]->transform);
-
     shadowProg.setUniform("lights[1].project", shadowProj);
     shadowProg.setUniform("lights[1].transform", pointLights[1]->transform);
-
-    shadowProg.setUniform("far_plane", 20.0f);
+    shadowProg.setUniform("far_plane", pointLights[0]->far);
 
     //directional shader
     directionalShadowProg.use();
     directionalShadowProg.printActiveUniforms();
-
     directionalShadowProg.setUniform("lights[0].transform", directionalLights[0]->view);
     directionalShadowProg.setUniform("lights[0].project", directionalLights[0]->projection);
     directionalShadowProg.setUniform("far_plane", directionalLights[0]->far);
@@ -280,7 +287,6 @@ void SceneBasic_Uniform::initScene()
     prog.setUniform("lights[1].textureID", 1);
     prog.setUniform("lights[1].transform", pointLights[1]->transform);
     prog.setUniform("lights[1].far_plane", pointLights[1]->far);
-
     prog.setUniform("directionalLights[0].lightIntensity", directionalLights[0]->intensity);
     prog.setUniform("directionalLights[0].lightColour", directionalLights[0]->colour);
     prog.setUniform("directionalLights[0].textureID", 0);
@@ -306,7 +312,6 @@ void SceneBasic_Uniform::initScene()
     waterProg.setUniform("lights[0].textureID", 0);
     waterProg.setUniform("lights[0].transform", pointLights[0]->transform);
     waterProg.setUniform("lights[0].far_plane", pointLights[0]->far);
-
     waterProg.setUniform("lights[1].lightIntensity", pointLights[1]->intensity);
     waterProg.setUniform("lights[1].lightColour", pointLights[1]->colour);
     waterProg.setUniform("lights[1].textureID", 1);
@@ -419,7 +424,8 @@ void SceneBasic_Uniform::update( float t )
     float radius = 40;
     float height = 20;
 
-    //sceneCamera.view = glm::lookAt(vec3(std::sin(spinAngle) * radius, height, std::cos(spinAngle) * radius), vec3(0), vec3(0, 1, 0));
+
+    boat->updateMatrix();
 }
 
 
@@ -437,7 +443,8 @@ void SceneBasic_Uniform::render()
     //shadowProg.use();
 
     //move a light around
-    pointLights[0]->transform = glm::translate(glm::mat4(1.0), glm::vec3(glm::sin(time) * -10.0f, -4,  9.0f)); //glm::cos(time) * -10.0f));
+    //pointLights[0]->transform = glm::translate(glm::mat4(1.0), glm::vec3(glm::sin(time) * -10.0f, -5,  9.0f)); //glm::cos(time) * -10.0f));
+    pointLights[0]->transform = glm::translate(glm::mat4(1.0), glm::vec3(glm::sin(time) * -10.0f, -9,  9.0f));
     //update moving light uniform
     //shadowProg.setUniform("lights[0].transform", pointLights[0]->transform);
 
@@ -526,9 +533,11 @@ void SceneBasic_Uniform::render()
     //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     //glDepthMask(GL_TRUE);
     
-    table->transform = glm::translate(glm::mat4(1.0), vec3(cos(time)*10, sin(cos(time) * 10 / 2.f + time * 2.f), -5)) * glm::scale(glm::mat4(1.0), vec3(3));
-    ball->transform =
-        glm::translate(glm::mat4(1.0), vec3(-2, sin(-2/2.f + time * 2.f), 5));
+    table->transform = glm::translate(glm::mat4(1.0), vec3(cos(0) * 10, sin(cos(0) * 10 / 2.f * 2.f), -1)) * glm::scale(glm::mat4(1.0), vec3(3));
+    ball->transform = glm::translate(glm::mat4(1.0), vec3(-2, sin(-2/2.f + time * 2.f), 5));
+
+    boat->position.y = sin(boat->position.x / 2.f + time * 2.f);
+
 
     for (Model* model : sceneModels) {
         model->program->use();

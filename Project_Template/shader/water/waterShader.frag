@@ -57,7 +57,7 @@ uniform struct material {
 
 vec4 volumetricLight(float stride, vec3 fragPos);
 
-vec3 computeLight(vec3 Pos, vec3 Nor);
+vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
 
 vec3 getViewDirection();
 
@@ -84,18 +84,12 @@ void main()
         TBN = mat3(T,B,normal);
         normal = TBN * normalMapSamples[1];
 
-        vec3 worldNor = normalize(transpose(inverse(mat3(model)))*gNor);
+        normal = normalize(normal);
 
-        vec3 viewDir = normalize(gPos-viewPos);
+        //vec3 worldNor = normalize(transpose(inverse(mat3(model)))*gNor);
+        //vec3 viewDir = normalize(gPos-viewPos);
 
-        //vec4 viewSpacePos = view*model*vec4(gPos,1.0);
-        //float distanceApparently = viewSpacePos.z; ?
-
-        FragColor =  vec4(computeLight(gPos,normal),1)*texture(colourTexture,gTex);// texture(skybox,reflect(viewDir,worldNor));//vec4(computeLight(gPos,gNor),1)*texture(colourTexture,gTex);
-
-        vec4 volumetric =  volumetricLight(1.5,gPos);
-        FragColor *= volumetric.w;
-        FragColor += vec4(volumetric.xyz,0);
+        FragColor =  vec4(computeLight(gPos,normal,texture(colourTexture,gTex)),1);//*texture(colourTexture,gTex);// texture(skybox,reflect(viewDir,worldNor));
 
     }
     else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);

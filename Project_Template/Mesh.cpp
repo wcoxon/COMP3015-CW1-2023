@@ -56,6 +56,7 @@ std::vector<std::string> split(std::string str, char delimiter) {
 
 void loadOBJ(std::ifstream* fileStream, std::vector<GLuint>* indices, std::vector<glm::vec3>* vertexPositions, std::vector<glm::vec3>* vertexNormals, std::vector<glm::vec2>* vertexUVs) {
 
+    std::vector<glm::vec3> facePositions;
     std::vector<glm::vec3> faceNormals;
     std::vector<glm::vec2> textureCoords;
 
@@ -71,20 +72,11 @@ void loadOBJ(std::ifstream* fileStream, std::vector<GLuint>* indices, std::vecto
 
         //add the vertex positions and initialise the vertex's normal
         if (lineSplit[0] == "v") {
-            vertexPositions->push_back({
+            facePositions.push_back({
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2]),
                 std::stof(lineSplit[3])
-                });
-            vertexNormals->push_back({
-                0,
-                0,
-                0
-                });
-            vertexUVs->push_back({
-                0,
-                0
-                });
+            });
         }
         //gather up the faces normals
         else if (lineSplit[0] == "vn") {
@@ -92,32 +84,35 @@ void loadOBJ(std::ifstream* fileStream, std::vector<GLuint>* indices, std::vecto
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2]),
                 std::stof(lineSplit[3])
-                });
+            });
         }
         else if (lineSplit[0] == "vt") {
             if(!textured) textured = true;
             textureCoords.push_back({
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2])
-                });
+            });
         }
         //generate vertex normals array using face normals
         else if (lineSplit[0] == "f") {
-            //bool quads = false;
-            //bool textured = false;
-            //if (!quads && lineSplit.size() == 4) quads = true;
 
             //triangle face
             for (int v = 0; v < 3; v++) {
 
+                auto vertexAttributes = split(lineSplit[1 + v], '/');
+                int vertexPositionIndex = std::stoi(vertexAttributes[0]) - 1;
+                int vertexTexCoordIndex = std::stoi(vertexAttributes[1]) - 1;
+                int vertexNormalIndex = std::stoi(vertexAttributes[2]) - 1;
+
                 //add index of face vertex
-                indices->push_back(std::stoi(split(lineSplit[1 + v], '/')[0]) - 1);
+                indices->push_back(indices->size());
 
-                //adjust vertex normal from face normal
-                (*vertexNormals)[std::stoi(split(lineSplit[1 + v], '/')[0]) - 1] += faceNormals[std::stoi(split(lineSplit[1 + v], '/')[2]) - 1];
+                vertexPositions->push_back(facePositions[vertexPositionIndex]);
 
-                //set vertex texture coordinate
-                if(textured) (*vertexUVs)[std::stoi(split(lineSplit[1 + v], '/')[0]) - 1] = textureCoords[std::stoi(split(lineSplit[1 + v], '/')[1]) - 1];
+                vertexNormals->push_back(faceNormals[vertexNormalIndex]);
+
+                vertexUVs->push_back(textureCoords[vertexTexCoordIndex]);
+
             }
         }
     }
@@ -218,28 +213,3 @@ void Model::drawModel() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]);
     glDrawElements(drawMode, indicesCount, GL_UNSIGNED_INT, 0);
 }
-
-/*
-void Model::loadTexture(std::string filePath) {
-
-    glBindTexture(GL_TEXTURE_2D, textureHandle);
-    // set the texture wrapping/filtering options (on the currently bound texture object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-    int width, height, nrChannels;
-    unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-    
-}*/

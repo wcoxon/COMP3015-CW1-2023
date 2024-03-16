@@ -53,20 +53,18 @@ uniform struct material {
 
 vec4 volumetricLight(float stride, vec3 fragPos);
 
-vec3 computeLight(vec3 Pos, vec3 Nor);
+vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
 
 void main() 
 {
     if(mtl.perFragment){
         
-        vec3 normalMapSample = 2*texture(normalMap,gTex).xyz-1;
-        vec3 normal = TBN * normalMapSample;
+        vec4 normalMapSample = texture(normalMap,gTex)*2-1;
+        vec3 normal = normalize(TBN * normalMapSample.xyz);
 
-        FragColor = vec4(computeLight(gPos,normal),1)*texture(colourTexture,gTex);
+        FragColor = vec4(computeLight(gPos,normal,texture(colourTexture,gTex)),1);
+        //FragColor = vec4(normal,1);
 
-        vec4 volumetric =  volumetricLight(1.5,gPos);
-        FragColor *= volumetric.w;
-        FragColor += vec4(volumetric.xyz,0);
     }
     else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);
 }
