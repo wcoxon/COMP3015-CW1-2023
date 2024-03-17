@@ -14,11 +14,11 @@ uniform float time;
 //out float depth;
 
 //unit length of wave
-float wavelength = 2;
+uniform float wavelength = 2;
 //units per second
-float speed = 2;
+uniform float speed = 2;
 //vertical scale
-float amplitude = 1;
+uniform float amplitude = 1;
 
 void main()
 {

@@ -59,6 +59,7 @@ vec4 volumetricLight(float stride, vec3 fragPos);
 vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
 
 float diffuse;
+float specular;
 
 void main() 
 {
@@ -72,7 +73,7 @@ void main()
 
         vec3 normal = normalize(TBN * normalMapSample.xyz);
         diffuse = mtl.diffuseReflectivity;
-
+        specular = mtl.specularReflectivity;
         FragColor = vec4(computeLight(gPos,normal,texture(colourTexture,gTex)),1);
 
     }

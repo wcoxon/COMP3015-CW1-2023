@@ -52,6 +52,7 @@ public:
     vec3 scale;
     vec3 position;
     vec3 direction{ vec3(0,0,-1) };
+    vec3 up{ vec3(0,1,0) };
 
     glm::mat4 transform = glm::mat4(1.0);
 
@@ -65,16 +66,18 @@ public:
 
     void drawModel();
 
-    void updateMatrix() {
-        transform = glm::inverse(glm::lookAt(position, position + direction, vec3(0, 1, 0))) *glm::scale(glm::mat4(1), scale);//glm::translate(glm::mat4(1), position)*glm::scale(glm::mat4(1),scale);
-    }
-    
 
-    void rotate(float angle, vec3 axis) {
-        transform = glm::rotate(transform, angle, axis);
+    void setUp(vec3 direction) {
+        up = direction;
+    }
+    void lookAt(vec3 target) {
+        direction = glm::normalize(target - position);
     }
     void translate(vec3 displacement) {
         position += displacement;
-        //transform = glm::translate(transform, displacement);
+    }
+
+    void updateMatrix() {
+        transform = glm::inverse(glm::lookAt(position, position + direction, up)) *glm::scale(glm::mat4(1), scale);//glm::translate(glm::mat4(1), position)*glm::scale(glm::mat4(1),scale);
     }
 };

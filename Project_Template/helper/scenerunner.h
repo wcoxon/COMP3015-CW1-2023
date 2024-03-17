@@ -175,10 +175,13 @@ private:
         mainScene = &scene;
 
         Model* boat = scene.sceneModels[4];
+        Model* water = scene.sceneModels[0];
 
 
         float boatAcceleration = 20.f;
         float boatDeceleration = -20.0f;
+
+        float maxSpeed = 10.f;
 
         vec3 boatVelocity = vec3(0);
 
@@ -199,13 +202,13 @@ private:
             vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0));
             directionVector.y = 0;
 
-            vec3 accelerationVector;
+            //vec3 accelerationVector;
 
-            if (directionVector != vec3(0)) {
+            if (directionVector != vec3(0) && glm::length(boatVelocity)<maxSpeed) {
                 // accelerate
                 directionVector = glm::normalize(directionVector);
 
-                accelerationVector = (float)deltaTime * boatAcceleration * directionVector;
+                vec3 accelerationVector = (float)deltaTime * boatAcceleration * directionVector;
 
                 boatVelocity += accelerationVector;
 
@@ -216,11 +219,13 @@ private:
                 boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)+boatDeceleration*(float)deltaTime,0.f);
 
             }
+            
+            water->program->use();
+            water->program->setUniform("boatSpeed", glm::length(boatVelocity));
 
             vec3 movementVector = (float)deltaTime * boatVelocity;
 
             boat->translate(movementVector);
-
 
             if (glfwGetKey(window, GLFW_KEY_1)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             if (glfwGetKey(window, GLFW_KEY_2)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

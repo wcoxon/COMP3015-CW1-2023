@@ -18,6 +18,7 @@ uniform mat4 projection;
 uniform mat4 model;
 
 uniform vec3 boatPosition;
+uniform float boatSpeed;
 
 
 uniform float time;
@@ -66,6 +67,7 @@ vec3 getViewDirection();
 vec3 viewPos;
 
 float diffuse;
+float specular;
 
 void main() 
 {
@@ -81,7 +83,9 @@ void main()
         vec3 T = normalize(cross(gNor,vec3(0,0,1)));
         vec3 B = normalize(cross(gNor,T));
         mat3 TBN = mat3(T,B,gNor);
-        vec3 normal = normalize(TBN* normalMapSamples[0]);
+        vec3 normal = TBN* normalMapSamples[0];
+        
+        normal = normalize(normal);
     
         T = normalize(cross(normal,vec3(0,0,1)));
         B = normalize(cross(normal,T));
@@ -94,8 +98,8 @@ void main()
         vec4 waterColour = texture(colourTexture,gTex);
         vec4 foamColour = vec4(1);
 
-        float foamStart = 5;
-        float foamEnd = 6;
+        float foamStart = (boatSpeed/10)*5;
+        float foamEnd = (boatSpeed/10)*6;
         float foamFade = foamEnd-foamStart;
 
         float mixFactor = clamp((distance(gPos, boatPosition) - foamStart)/foamFade,0,1);
@@ -103,6 +107,7 @@ void main()
         vec4 mixColour = mix(foamColour,waterColour,mixFactor);
 
         diffuse = mix(1,mtl.diffuseReflectivity,mixFactor);
+        specular = mix(0,mtl.specularReflectivity,mixFactor);
 
         vec3 mixNormal = normalize(mix(gNor,normal,mixFactor));
 

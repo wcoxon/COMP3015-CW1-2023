@@ -125,6 +125,12 @@ Model* boat;
 Material waterMaterial{ false, .1f, .1f, 1.f, 32 };
 Material wallMaterial{ true, .1f, 1.5, 0.f };
 
+
+float amplitude = 1;
+float wavelength = 5;
+float waveSpeed = 2;
+glm::vec3 waveDirection = vec3(1, 0, 0);
+
 void SceneBasic_Uniform::initScene()
 {
     glFrontFace(GL_CW);
@@ -138,7 +144,7 @@ void SceneBasic_Uniform::initScene()
     water->program = &waterProg;
     generatePatches(water);
     water->normalMap.load("./media/textures/0001.png");
-    water->transform = glm::translate(mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), vec3(5));
+    water->transform = glm::translate(mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), vec3(10));
     water->mtl = waterMaterial;
     sceneModels.push_back(water);
     
@@ -168,7 +174,7 @@ void SceneBasic_Uniform::initScene()
 
     boat = new Model();
     boat->program = &prog;
-    boat->loadFileModel("./media/boat.obj");
+    boat->loadFileModel("./media/boat2.obj");
     boat->position = vec3(2, 1, 3);
     boat->scale = vec3(1.5);
     boat->mtl.shadeFlat = true;
@@ -241,39 +247,32 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
     directionalLights.push_back(new DirectionalLight());
-    directionalLights[0]->view = glm::lookAt(vec3(-20.f, 20.f, 0.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
-
+    directionalLights[0]->view = glm::lookAt(vec3(-20.f, 20.f, -20.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
 
     shadowProg.use();
     shadowProg.printActiveUniforms();
-    //set point light uniforms
     shadowProg.setUniform("lights[0].project", shadowProj);
     shadowProg.setUniform("lights[0].transform", pointLights[0]->transform);
     shadowProg.setUniform("lights[1].project", shadowProj);
     shadowProg.setUniform("lights[1].transform", pointLights[1]->transform);
     shadowProg.setUniform("far_plane", pointLights[0]->far);
 
-    //directional shader
     directionalShadowProg.use();
     directionalShadowProg.printActiveUniforms();
     directionalShadowProg.setUniform("lights[0].transform", directionalLights[0]->view);
     directionalShadowProg.setUniform("lights[0].project", directionalLights[0]->projection);
     directionalShadowProg.setUniform("far_plane", directionalLights[0]->far);
 
-    //standard shader
     prog.use();
-    cout << "standard shaders:" << endl;
+    cout << "standard shader:" << endl;
     prog.printActiveUniforms();
-
     prog.setUniform("view", sceneCamera.view);
     prog.setUniform("projection", sceneCamera.projection);
-
     prog.setUniform("lights[0].lightIntensity", pointLights[0]->intensity);
     prog.setUniform("lights[0].lightColour", pointLights[0]->colour);
     prog.setUniform("lights[0].textureID", 0);
     prog.setUniform("lights[0].transform", pointLights[0]->transform);
     prog.setUniform("lights[0].far_plane", pointLights[0]->far);
-
     prog.setUniform("lights[1].lightIntensity", pointLights[1]->intensity);
     prog.setUniform("lights[1].lightColour", pointLights[1]->colour);
     prog.setUniform("lights[1].textureID", 1);
@@ -286,14 +285,11 @@ void SceneBasic_Uniform::initScene()
     prog.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     prog.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
 
-    // water shader
     waterProg.use();
-    cout << "water shaders:" << endl;
+    cout << "water shader:" << endl;
     waterProg.printActiveUniforms();
-
     waterProg.setUniform("view", sceneCamera.view);
     waterProg.setUniform("projection", sceneCamera.projection);
-
     waterProg.setUniform("lights[0].lightIntensity", pointLights[0]->intensity);
     waterProg.setUniform("lights[0].lightColour", pointLights[0]->colour);
     waterProg.setUniform("lights[0].textureID", 0);
@@ -304,19 +300,37 @@ void SceneBasic_Uniform::initScene()
     waterProg.setUniform("lights[1].textureID", 1);
     waterProg.setUniform("lights[1].transform", pointLights[1]->transform);
     waterProg.setUniform("lights[1].far_plane", pointLights[1]->far);
-
     waterProg.setUniform("directionalLights[0].lightIntensity", directionalLights[0]->intensity);
     waterProg.setUniform("directionalLights[0].lightColour", directionalLights[0]->colour);
     waterProg.setUniform("directionalLights[0].textureID", 0);
     waterProg.setUniform("directionalLights[0].project", directionalLights[0]->projection);
     waterProg.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     waterProg.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
+    waterProg.setUniform("wavelength", wavelength);
+    waterProg.setUniform("speed", waveSpeed);
+    waterProg.setUniform("amplitude", amplitude);
 
-    //skybox shader
+    waterDirectionalShadowPass.use();
+    waterDirectionalShadowPass.setUniform("lights[0].transform", directionalLights[0]->view);
+    waterDirectionalShadowPass.setUniform("lights[0].project", directionalLights[0]->projection);
+    waterDirectionalShadowPass.setUniform("far_plane", directionalLights[0]->far);
+    waterDirectionalShadowPass.setUniform("wavelength", wavelength);
+    waterDirectionalShadowPass.setUniform("speed", waveSpeed);
+    waterDirectionalShadowPass.setUniform("amplitude", amplitude);
+
+    waterPointShadowPass.use();
+    waterPointShadowPass.setUniform("lights[0].project", shadowProj);
+    waterPointShadowPass.setUniform("lights[0].transform", pointLights[0]->transform);
+    waterPointShadowPass.setUniform("lights[1].project", shadowProj);
+    waterPointShadowPass.setUniform("lights[1].transform", pointLights[1]->transform);
+    waterPointShadowPass.setUniform("far_plane", 20.0f);
+    waterPointShadowPass.setUniform("wavelength", wavelength);
+    waterPointShadowPass.setUniform("speed", waveSpeed);
+    waterPointShadowPass.setUniform("amplitude", amplitude);
+
     skyboxProg.use();
     skyboxProg.setUniform("view", sceneCamera.view);
     skyboxProg.setUniform("projection", sceneCamera.projection);
-
     skyboxProg.setUniform("directionalLights[0].lightIntensity", directionalLights[0]->intensity);
     skyboxProg.setUniform("directionalLights[0].lightColour", directionalLights[0]->colour);
     skyboxProg.setUniform("directionalLights[0].textureID", 0);
@@ -324,21 +338,7 @@ void SceneBasic_Uniform::initScene()
     skyboxProg.setUniform("directionalLights[0].transform", directionalLights[0]->view);
     skyboxProg.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
 
-    waterDirectionalShadowPass.use();
-
-    waterDirectionalShadowPass.setUniform("lights[0].transform", directionalLights[0]->view);
-    waterDirectionalShadowPass.setUniform("lights[0].project", directionalLights[0]->projection);
-    waterDirectionalShadowPass.setUniform("far_plane", directionalLights[0]->far);
-
-    waterPointShadowPass.use();
-    waterPointShadowPass.setUniform("lights[0].project", shadowProj);
-    waterPointShadowPass.setUniform("lights[0].transform", pointLights[0]->transform);
     
-    waterPointShadowPass.setUniform("lights[1].project", shadowProj);
-    waterPointShadowPass.setUniform("lights[1].transform", pointLights[1]->transform);
-    
-    waterPointShadowPass.setUniform("far_plane", 20.0f);
-
 }
 
 void SceneBasic_Uniform::compile()
@@ -394,15 +394,27 @@ void SceneBasic_Uniform::compile()
 	}
 }
 
+float getWaveHeight(vec3 position,float time) {
+    return sin(position.x / wavelength + time * waveSpeed);
+}
+
 void SceneBasic_Uniform::update( float t )
 {
     time = t;
 
-    ball->position.y = sin(ball->position.x / 2.f + time * 2.f);
+    ball->position.y = getWaveHeight(ball->position, time);
+
     ball->updateMatrix();
 
-    boat->position.y = sin(boat->position.x / 2.f + time * 2.f);
+
+    boat->position.y = getWaveHeight(boat->position, time);
+
+    boat->setUp(vec3((amplitude / wavelength) * -cos(boat->position.x / wavelength + time * waveSpeed), 1, 0));
+
+    boat->direction = vec3(boat->direction.x, glm::dot(boat->direction,waveDirection) * (amplitude / wavelength) * cos(boat->position.x / wavelength + time * waveSpeed), boat->direction.z);
+
     boat->updateMatrix();
+
 
     water->program->use();
     water->program->setUniform("boatPosition", boat->position);
@@ -424,14 +436,13 @@ void SceneBasic_Uniform::render()
 
     for (Model* model : sceneModels) {
         
-
         if (model->program == &waterProg) {
             waterPointShadowPass.use();
-
             waterPointShadowPass.setUniform("cameraView", sceneCamera.view);
             waterPointShadowPass.setUniform("model", model->transform);
             waterPointShadowPass.setUniform("time", time);
             waterPointShadowPass.setUniform("lights[0].transform", pointLights[0]->transform);
+            waterPointShadowPass.setUniform("boatPosition", boat->position);
         }
         else {
             shadowProg.use();
@@ -459,27 +470,22 @@ void SceneBasic_Uniform::render()
     glBindFramebuffer(GL_FRAMEBUFFER, dirShadowFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    //switch to directional shader
-    directionalShadowProg.use();
-
     //render backfaces depths
     //glCullFace(GL_FRONT);
 
     for (Model* model : sceneModels) {
         
-
         if (model->program == &waterProg) {
             waterDirectionalShadowPass.use();
             waterDirectionalShadowPass.setUniform("cameraView", sceneCamera.view);
             waterDirectionalShadowPass.setUniform("model", model->transform);
             waterDirectionalShadowPass.setUniform("time", time);
-
+            waterDirectionalShadowPass.setUniform("boatPosition", boat->position);
         }
         else {
             directionalShadowProg.use();
             directionalShadowProg.setUniform("model", model->transform);
         }
-
 
         //render directional light depthmap
         glBindVertexArray(model->vaoHandle);

@@ -4,8 +4,6 @@
 
 in vec3 gPos;
 in vec3 gNor;
-//in vec3 tangent;
-//in vec3 faceNor;
 in vec2 gTex;
 in mat3 TBN;
 in vec3 gLight;
@@ -14,7 +12,6 @@ in vec3 gColor;
 layout (location = 0) out vec4 FragColor;
 
 uniform bool volumetricLighting = false;
-
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 model;
@@ -53,8 +50,9 @@ uniform struct material {
 	bool shadeFlat;
 } mtl;
 
-vec4 color = vec4(1);
+
 float diffuse;
+float specular;
 
 vec3 viewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
 
@@ -127,12 +125,14 @@ float phongSpecular(vec3 lightDir,vec3 viewDir,vec3 fragNormal){
 }
 float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 fragNormal){
 	vec3 h = -normalize(lightDir+viewDir);
-	return mtl.specularReflectivity*pow(max(dot(h,fragNormal),0),mtl.specularPower);
+	return specular*pow(max(dot(h,fragNormal),0),mtl.specularPower); //mtl.specularReflectivity*pow(max(dot(h,fragNormal),0),mtl.specularPower);
 }
 
 vec3 getViewDirection(){
 	return normalize(gPos-viewPos);
 }
+
+
 
 //Pos (world position), Nor (world normal)
 vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
@@ -204,7 +204,7 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 	 Light *= surfaceColour.rgb;
 
 	 if(volumetricLighting){
-		vec4 volumetric = volumetricLight(1.0f, Pos);
+		vec4 volumetric = volumetricLight(.5f, Pos);
 		Light *= volumetric.w;
 		Light += volumetric.rgb;
 	 }
