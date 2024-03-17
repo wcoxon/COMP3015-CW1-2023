@@ -13,7 +13,7 @@ public:
 
     float far{ 500 };
     vec3 position{vec3(0,20,20)};
-    vec3 direction;
+    vec3 direction{vec3(0,0,-1)};
 
     glm::mat4 view{ glm::mat4(1.0) };
     glm::mat4 projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.0f, far);
@@ -22,15 +22,16 @@ public:
         main = this;
     }
 
-    void updateMatrix() {
-        view = glm::lookAt(position, position + direction, vec3(0, 1, 0));
+    void translate(vec3 displacement) {
+        position += displacement;
     }
 
-    void translate(vec3 displacement) {
-        view = glm::translate(view, displacement);
+    void lookAt(vec3 target) {
+        direction = glm::normalize(target-position);
     }
-    void rotate(float angle, vec3 axis) {
-        view = glm::rotate(view, angle, axis);
+
+    void updateMatrix() {
+        view = glm::lookAt(position, position + direction, vec3(0, 1, 0));
     }
 
 };

@@ -4,7 +4,8 @@
 
 in vec3 gPos;
 in vec3 gNor;
-in vec3 faceNor;
+//in vec3 tangent;
+//in vec3 faceNor;
 in vec2 gTex;
 in mat3 TBN;
 in vec3 gLight;
@@ -20,6 +21,8 @@ uniform mat4 model;
 
 layout(binding = 0) uniform sampler2D colourTexture;
 layout(binding = 1) uniform sampler2D normalMap;
+layout(binding = 2) uniform samplerCubeArray pointDepthMaps;
+layout(binding = 3) uniform sampler2DArray directionalDepthMaps;
 
 uniform struct pointLight {
 	int lightType;
@@ -29,7 +32,6 @@ uniform struct pointLight {
 	vec3 lightColour;
 	float far_plane;
 } lights[NR_POINT_LIGHTS];
-layout(binding = 2) uniform samplerCubeArray pointDepthMaps;
 
 uniform struct directionalLight {
 	int textureID;
@@ -40,7 +42,6 @@ uniform struct directionalLight {
 	vec3 lightColour;
 	float far_plane;
 } directionalLights[NR_DIR_LIGHTS];
-layout(binding = 3) uniform sampler2DArray directionalDepthMaps;
 
 uniform struct material {
 	float ambientReflectivity;
@@ -53,6 +54,7 @@ uniform struct material {
 } mtl;
 
 vec4 color = vec4(1);
+float diffuse;
 
 vec3 viewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
 
@@ -159,7 +161,7 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 		float bias = 0.01;
 
 		if((fragDepth -  bias) < lightDepth){
-			float diffuse = mtl.diffuseReflectivity * max(-dot(normalize(lightToFrag),worldNor),0);
+			float diffuse = diffuse * max(-dot(normalize(lightToFrag),worldNor),0); //mtl.diffuseReflectivity * max(-dot(normalize(lightToFrag),worldNor),0);
 			float specular = blinn_phong(normalize(lightToFrag),normalize(viewToFrag),worldNor);
 
 			Light += lights[lightIndex].lightColour*lights[lightIndex].lightIntensity*(Ambient+diffuse + specular)*lightAttenuation;
@@ -179,20 +181,17 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 
 		vec4 lightSpacePos = light.project* light.transform *vec4(Pos,1);
 
-		//vec3 lightFragPos = lightSpacePos.xyz / lightSpacePos.w;
-
 		vec3 depthCoords = (lightSpacePos.xyz / lightSpacePos.w + 1)/2;
 
-		//float fragDepth = (lightFragPos.z+1)/2;
-		
-		//vec3 depthMapTexCoords = vec3(depthCoords,i);
 		float lightDepth = texture(directionalDepthMaps,depthCoords).r;
 		
 		float bias = 0.01;
 
-		if((depthCoords.z -  bias) < lightDepth){
+		bool outOfClipSpace = (abs(lightSpacePos.x)>1)||(abs(lightSpacePos.y)>1)||(abs(lightSpacePos.z)>1);
+
+		if((depthCoords.z -  bias) < lightDepth || outOfClipSpace){
 			//calculate reflections
-			float Diffuse = mtl.diffuseReflectivity * max(-dot(normalize(lightDir),worldNor),0);
+			float Diffuse = diffuse * max(-dot(normalize(lightDir),worldNor),0); //mtl.diffuseReflectivity * max(-dot(normalize(lightDir),worldNor),0);
 			float specular = blinn_phong(lightDir,normalize(viewToFrag),worldNor);
 			
 			Light +=  light.lightIntensity*(Ambient + Diffuse + specular) * light.lightColour;
@@ -205,7 +204,7 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 	 Light *= surfaceColour.rgb;
 
 	 if(volumetricLighting){
-		vec4 volumetric = volumetricLight(1.5f, Pos);
+		vec4 volumetric = volumetricLight(1.0f, Pos);
 		Light *= volumetric.w;
 		Light += volumetric.rgb;
 	 }

@@ -114,6 +114,8 @@ void generatePatches(Model* model) {
 
 Model* skybox;
 
+Model* water;
+
 Model* ball;
 Model* table;
 Model* wall;
@@ -132,7 +134,7 @@ void SceneBasic_Uniform::initScene()
 
     compile();
 
-    Model* water = new Model();
+    water = new Model();
     water->program = &waterProg;
     generatePatches(water);
     water->normalMap.load("./media/textures/0001.png");
@@ -158,9 +160,10 @@ void SceneBasic_Uniform::initScene()
 
     ball = new Model();
     ball->program = &prog;
-    ball->loadFileModel("./media/icosphere.obj");
+    ball->loadFileModel("./media/ball.obj");
     ball->position = vec3(-2, 1, 5);
     ball->scale = vec3(5.0);
+    ball->mtl.shadeFlat = false;
     sceneModels.push_back(ball);
 
     boat = new Model();
@@ -238,7 +241,7 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
     directionalLights.push_back(new DirectionalLight());
-    directionalLights[0]->view =glm::lookAt(vec3(-20.f, 20.f, 20.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
+    directionalLights[0]->view = glm::lookAt(vec3(-20.f, 20.f, 0.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
 
 
     shadowProg.use();
@@ -400,6 +403,9 @@ void SceneBasic_Uniform::update( float t )
 
     boat->position.y = sin(boat->position.x / 2.f + time * 2.f);
     boat->updateMatrix();
+
+    water->program->use();
+    water->program->setUniform("boatPosition", boat->position);
 }
 
 

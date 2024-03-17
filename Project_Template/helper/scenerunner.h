@@ -174,15 +174,16 @@ private:
 
         mainScene = &scene;
 
-        double lastFrameTime = glfwGetTime();
-
         Model* boat = scene.sceneModels[4];
+
 
         float boatAcceleration = 20.f;
         float boatDeceleration = -20.0f;
 
         vec3 boatVelocity = vec3(0);
 
+
+        double lastFrameTime = glfwGetTime();
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
@@ -202,7 +203,6 @@ private:
 
             if (directionVector != vec3(0)) {
                 // accelerate
-
                 directionVector = glm::normalize(directionVector);
 
                 accelerationVector = (float)deltaTime * boatAcceleration * directionVector;
@@ -213,7 +213,6 @@ private:
             }
             else if(boatVelocity!=vec3(0)){
                 //slow down
-
                 boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)+boatDeceleration*(float)deltaTime,0.f);
 
             }
@@ -224,9 +223,20 @@ private:
 
 
             if (glfwGetKey(window, GLFW_KEY_1)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            
             if (glfwGetKey(window, GLFW_KEY_2)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            
+
+            if (glfwGetKey(window, GLFW_KEY_3)) {
+                boat->program->use();
+                boat->program->setUniform("volumetricLighting", true);
+                scene.sceneModels[0]->program->use();
+                scene.sceneModels[0]->program->setUniform("volumetricLighting", true);
+            }
+            if (glfwGetKey(window, GLFW_KEY_4)) {
+                boat->program->use();
+                boat->program->setUniform("volumetricLighting", false);
+                scene.sceneModels[0]->program->use();
+                scene.sceneModels[0]->program->setUniform("volumetricLighting", false);
+            }
 
             scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));
 

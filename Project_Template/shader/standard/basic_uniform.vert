@@ -1,27 +1,20 @@
 #version 460
 
-//local position
 layout (location = 0) in vec3 VertexPosition;
-layout (location = 1) in vec3 VertexColor;
-//local normal
 layout (location = 2) in vec3 VertexNormal;
 layout (location = 3) in vec2 VertexTextureCoord;
+layout (location = 1) in vec3 VertexColor;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform sampler2D displacementMap;
+//uniform sampler2D displacementMap;
 
-uniform bool perFragment;
-
-out vec3 vColor;
-
-//world position
-out vec3 vPos;
-//local normal
-out vec3 vNor;
+out vec3 vPos; //world
+out vec3 vNor; //local
 out vec2 vTex;
+out vec3 vColor;
 
 void main(){
 

@@ -3,18 +3,17 @@
 #define NR_DIR_LIGHTS 1
 
 layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
 
-//positions (local)
-in vec3 vPos[3];
-in vec3 vNor[3];
+
+in vec3 vPos[3]; //world
+in vec3 vNor[3]; //local
 in vec2 vTex[3];
 in vec3 vColor[3];
 
-layout (triangle_strip, max_vertices = 3) out;
-
-//position (local)
-out vec3 gPos;
-out vec3 gNor;
+out vec3 gPos; //world
+out vec3 gNor; // world
+//out vec3 tangent; // world
 out vec2 gTex;
 out vec3 gColor;
 out vec3 gLight;
@@ -135,43 +134,23 @@ vec3 gouraudLighting(vec3 Pos, vec3 Nor){
 void main() {
     gColor = vColor[0];
 
-
-    // positions (world positions, so the calculated normal will be in world too, maybe world won't work idk)
-    vec3 pos1 = vPos[0];
-    vec3 pos2= vPos[1];
-    vec3 pos3= vPos[2];
-    // texture coordinates
-    vec2 uv1 = vTex[0];
-    vec2 uv2 = vTex[1];
-    vec2 uv3 = vTex[2];
-
-    //get the change in position over each edge
-    vec3 edge1 = pos2 - pos1;
-    vec3 edge2 = pos3 - pos1;
+    //get the change in position over each edge (world)
+    vec3 edge1 = vPos[1] - vPos[0];
+    vec3 edge2 = vPos[2] - vPos[0];
     //get the change in texture coordinate over each edge
-    vec2 deltaUV1 = uv2 - uv1;
-    vec2 deltaUV2 = uv3 - uv1;
-
+    vec2 deltaUV1 = vTex[1] - vTex[0];
+    vec2 deltaUV2 = vTex[2] - vTex[0];
 
     // normal vector
     vec3 faceNormal = normalize(cross(edge1,edge2));
-
-    vec3 tangent;
-    vec3 bitangent;
-
-    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
     
-    tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-    //this fixes it?? ergh
-    bitangent = cross(tangent,faceNormal);
-
-    tangent = normalize(tangent);
-    bitangent = normalize(bitangent);
-
-    TBN = mat3(tangent,bitangent,faceNormal);
+    vec3 faceTangent;
+    faceTangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+    faceTangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+    faceTangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+    faceTangent = normalize(faceTangent);
 
     for(int x = 0; x<3;x++){
 
@@ -179,8 +158,22 @@ void main() {
         gTex = vTex[x];
 
         // use face normal or individuals
-        if(mtl.shadeFlat) gNor = faceNormal;
-        else gNor = vNor[x];
+        if(mtl.shadeFlat) {
+            gNor = faceNormal;
+
+            vec3 faceBitangent = normalize(cross(faceTangent,faceNormal));
+
+            TBN = mat3(faceTangent,faceBitangent,faceNormal); //face tbn
+        }
+        else{
+            gNor = vec3(model*vec4(vNor[x],0));
+
+            vec3 vertTangent = normalize(faceTangent - dot(faceTangent, gNor) * gNor); //orthogonalize tangent
+
+            vec3 vertBitangent = normalize(cross(vertTangent,gNor));
+
+            TBN = mat3(vertTangent,vertBitangent,gNor); //vertex tbn
+        }
 
         // per-vertex lighting computation
         if(!mtl.perFragment){

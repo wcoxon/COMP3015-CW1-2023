@@ -3,8 +3,11 @@
 #define NR_DIR_LIGHTS 1
 
 in vec3 gPos;
+//normal (world)
 in vec3 gNor;
-in vec3 faceNor;
+//tangent (world)
+//in vec3 tangent;
+//in vec3 faceNor;
 in vec2 gTex;
 in mat3 TBN;
 in vec3 gLight;
@@ -18,6 +21,8 @@ uniform mat4 model;
 
 uniform sampler2D colourTexture;
 uniform sampler2D normalMap;
+uniform samplerCubeArray pointDepthMaps;
+uniform sampler2DArray directionalDepthMaps;
 
 uniform struct pointLight {
     int lightType;
@@ -27,7 +32,6 @@ uniform struct pointLight {
     vec3 lightColour;
     float far_plane;
 } lights[NR_POINT_LIGHTS];
-uniform samplerCubeArray pointDepthMaps;
 
 uniform struct directionalLight {
     int textureID;
@@ -38,7 +42,6 @@ uniform struct directionalLight {
     vec3 lightColour;
     float far_plane;
 } directionalLights[NR_DIR_LIGHTS];
-uniform sampler2DArray directionalDepthMaps;
 
 uniform struct material {
     float ambientReflectivity;
@@ -55,15 +58,22 @@ vec4 volumetricLight(float stride, vec3 fragPos);
 
 vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
 
+float diffuse;
+
 void main() 
 {
     if(mtl.perFragment){
         
         vec4 normalMapSample = texture(normalMap,gTex)*2-1;
+
+        //vec3 bitangent = normalize(cross(tangent,gNor));
+
+        //mat3 fragTBN = mat3(tangent,bitangent,gNor);
+
         vec3 normal = normalize(TBN * normalMapSample.xyz);
+        diffuse = mtl.diffuseReflectivity;
 
         FragColor = vec4(computeLight(gPos,normal,texture(colourTexture,gTex)),1);
-        //FragColor = vec4(normal,1);
 
     }
     else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);
