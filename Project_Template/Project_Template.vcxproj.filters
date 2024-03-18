@@ -59,15 +59,6 @@
     <None Include="shader\basic_uniform.geom">
       <Filter>shaders</Filter>
     </None>
-    <None Include="omniDepthShader.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="omniDepthShader.geom">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="omniDepthShader.frag">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shader\waterShader.frag">
       <Filter>shaders</Filter>
     </None>
@@ -111,6 +102,7 @@
     <None Include="shader\lightmapping\waterDepthShader.frag" />
     <None Include="shader\tessellation\controlDepth.tesc" />
     <None Include="shader\tessellation\evalDepth.tese" />
+    <None Include="shader\tessellation\common.tesc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\scene.h">

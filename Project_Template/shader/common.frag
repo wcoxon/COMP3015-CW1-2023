@@ -1,25 +1,26 @@
 #version 460
+
 #define NR_POINT_LIGHTS 2
 #define NR_DIR_LIGHTS 1
 
-in vec3 gPos;
-in vec3 gNor;
+in vec3 gPos; // world
+in vec3 gNor; // world
 in vec2 gTex;
 in mat3 TBN;
 in vec3 gLight;
-in vec3 gColor;
 
 layout (location = 0) out vec4 FragColor;
 
-uniform bool volumetricLighting = false;
-uniform mat4 view;
+// uniforms
 uniform mat4 projection;
+uniform mat4 view;
 uniform mat4 model;
 
 layout(binding = 0) uniform sampler2D colourTexture;
 layout(binding = 1) uniform sampler2D normalMap;
 layout(binding = 2) uniform samplerCubeArray pointDepthMaps;
 layout(binding = 3) uniform sampler2DArray directionalDepthMaps;
+layout(binding = 4) uniform samplerCube skybox;
 
 uniform struct pointLight {
 	int lightType;
@@ -50,6 +51,8 @@ uniform struct material {
 	bool shadeFlat;
 } mtl;
 
+uniform bool volumetricLighting = false;
+
 
 float diffuse;
 float specular;
@@ -62,7 +65,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
 	int steps = int(ceil(fragDistance/stride));
 
 	vec3 reflectColour = vec3(1);
-	float density = 0.02;
+	float density = 0.04;
 	float scatterPerUnit = 0.001;
 	
 	directionalLight dirLight = directionalLights[0];
@@ -128,26 +131,43 @@ float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 fragNormal){
 	return specular*pow(max(dot(h,fragNormal),0),mtl.specularPower); //mtl.specularReflectivity*pow(max(dot(h,fragNormal),0),mtl.specularPower);
 }
 
-vec3 getViewDirection(){
-	return normalize(gPos-viewPos);
-}
+float fogStart = 80;
+float fogEnd = 250;
+vec4 fogColour = vec4(0.5,0.5,0.5,1);
+
+bool enableFog = false;
+bool skyboxFog = false;
 
 
+bool reflectSkybox = true;
 
-//Pos (world position), Nor (world normal)
+//Position (world), Normal (world)
 vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 
-	vec3 worldNor = Nor;//normalize(transpose(inverse(mat3(model)))*Nor);
-
-
+	vec3 worldNor = Nor;
 	vec3 viewToFrag = Pos-viewPos;
 
-	vec3 Light = vec3(0);
+	
+	float fogFactor = 0;
+	if(enableFog){
+	
+		fogFactor = clamp((length(viewToFrag)-fogStart)/(fogEnd-fogStart) , 0, 1);
 
+		if(skyboxFog) fogColour = texture(skybox,normalize(viewToFrag));
+
+		if(fogFactor==1) return fogColour.xyz;
+	}
+
+	vec3 Light = vec3(0);
 	float Ambient = mtl.ambientReflectivity;
 
+	if(reflectSkybox){
+		vec4 skyboxReflection = texture(skybox,reflect(viewToFrag,Nor));
+		Light += Ambient*skyboxReflection.rgb;
+	}
+
 	//point lights
-	for(int lightIndex = 0; lightIndex<NR_POINT_LIGHTS;lightIndex++){
+	for(int lightIndex = 0; lightIndex<NR_POINT_LIGHTS; lightIndex++){
 
 		vec3 lightToFrag = (lights[lightIndex].transform*vec4(Pos,1)).xyz;
 
@@ -204,10 +224,10 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 	 Light *= surfaceColour.rgb;
 
 	 if(volumetricLighting){
-		vec4 volumetric = volumetricLight(.5f, Pos);
+		vec4 volumetric = volumetricLight(1.f, Pos);
 		Light *= volumetric.w;
 		Light += volumetric.rgb;
 	 }
 
-	 return clamp(Light,0,1);
+	 return mix(clamp(Light,0,1),fogColour.xyz,fogFactor);
 }

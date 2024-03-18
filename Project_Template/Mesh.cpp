@@ -2,7 +2,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-Texture::Texture( vec3 defaultColour) {
+Texture::Texture(vec3 defaultColour) 
+{
     glGenTextures(1, &handle);
     glBindTexture(GL_TEXTURE_2D, handle);
 
@@ -11,17 +12,17 @@ Texture::Texture( vec3 defaultColour) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL,0);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL,0); //?
 
-    //initialise single pixel
+    //initialise single pixel texture
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_FLOAT, &defaultColour[0]);
 
     //unbind
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture::load(std::string filePath) {
-
+void Texture::load(std::string filePath) 
+{
     glBindTexture(GL_TEXTURE_2D, handle);
 
     int width, height, nrChannels;
@@ -30,10 +31,8 @@ void Texture::load(std::string filePath) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
+    else std::cout << "Failed to load texture" << std::endl;
+    
     stbi_image_free(data);
 }
 
@@ -54,64 +53,65 @@ vector<std::string> split(std::string str, char delimiter) {
     return buffer;
 }
 
-void loadOBJ(std::ifstream* fileStream, vector<GLuint>* indices, vector<vec3>* vertexPositions, vector<vec3>* vertexNormals, vector<glm::vec2>* vertexUVs) {
-
-    vector<vec3> facePositions;
-    vector<vec3> faceNormals;
-    vector<glm::vec2> textureCoords;
+void loadOBJ(std::ifstream* fileStream, vector<GLuint>* indices, vector<vec3>* vertexPositions, vector<vec3>* vertexNormals, vector<glm::vec2>* vertexUVs) 
+{
+    vector<vec3> positions;
+    vector<vec3> normals;
+    vector<glm::vec2> texCoords;
 
     std::string line;
     vector<std::string> lineSplit;
 
-    bool quads = false;
+    //bool quads = false;
     bool textured = false;
 
     while (std::getline(*fileStream, line)) {
 
         lineSplit = split(line, ' ');
 
-        //add the vertex positions and initialise the vertex's normal
-        if (lineSplit[0] == "v") {
-            facePositions.push_back({
+        if (lineSplit[0] == "v")
+        {
+            positions.push_back({
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2]),
                 std::stof(lineSplit[3])
             });
         }
-        //gather up the faces normals
-        else if (lineSplit[0] == "vn") {
-            faceNormals.push_back({
+        else if (lineSplit[0] == "vn")
+        {
+            normals.push_back({
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2]),
                 std::stof(lineSplit[3])
             });
         }
-        else if (lineSplit[0] == "vt") {
+        else if (lineSplit[0] == "vt")
+        {
             if(!textured) textured = true;
-            textureCoords.push_back({
+            texCoords.push_back({
                 std::stof(lineSplit[1]),
                 std::stof(lineSplit[2])
             });
         }
-        //generate vertex normals array using face normals
-        else if (lineSplit[0] == "f") {
-
+        else if (lineSplit[0] == "f")
+        {
             //triangle face
             for (int v = 0; v < 3; v++) {
 
                 auto vertexAttributes = split(lineSplit[1 + v], '/');
-                int vertexPositionIndex = std::stoi(vertexAttributes[0]) - 1;
-                int vertexTexCoordIndex = std::stoi(vertexAttributes[1]) - 1;
-                int vertexNormalIndex = std::stoi(vertexAttributes[2]) - 1;
+
+                int positionIndex = std::stoi(vertexAttributes[0]) - 1;
+                int texCoordIndex = std::stoi(vertexAttributes[1]) - 1;
+                int normalIndex = std::stoi(vertexAttributes[2]) - 1;
 
                 //add index of face vertex
                 indices->push_back(indices->size());
 
-                vertexPositions->push_back(facePositions[vertexPositionIndex]);
+                vertexPositions->push_back(positions[positionIndex]);
 
-                vertexNormals->push_back(faceNormals[vertexNormalIndex]);
+                vertexNormals->push_back(normals[normalIndex]);
 
-                vertexUVs->push_back(textureCoords[vertexTexCoordIndex]);
+                vertexUVs->push_back(texCoords[texCoordIndex]);
 
             }
         }
@@ -127,6 +127,7 @@ void Model::loadBufferData(vector<vec3> positionData, vector<vec3> normalsData, 
     //bind the first VBO and initialise empty buffer to store positions and colour data
     glBindBuffer(GL_ARRAY_BUFFER, vboHandles[0]);
     glBufferData(GL_ARRAY_BUFFER, (positionData.size()*3 + normalsData.size()*3 + textureData.size()*2) * sizeof(float), NULL, GL_STATIC_DRAW);
+
     //load positions into buffer 0
     glBufferSubData(
         GL_ARRAY_BUFFER,
@@ -134,13 +135,16 @@ void Model::loadBufferData(vector<vec3> positionData, vector<vec3> normalsData, 
         positionData.size() * sizeof(vec3),
         &positionData[0]
     );
-    //load normals into buffer 0 after positions
+
+    //load normals
     glBufferSubData(
         GL_ARRAY_BUFFER,
         positionData.size() * sizeof(vec3),
         normalsData.size() * sizeof(vec3),
         &normalsData[0]
     );
+
+    //load UVs
     glBufferSubData(
         GL_ARRAY_BUFFER,
         (positionData.size()+normalsData.size()) * sizeof(vec3),
@@ -148,40 +152,38 @@ void Model::loadBufferData(vector<vec3> positionData, vector<vec3> normalsData, 
         &textureData[0]
     );
 
-    //bind the second VBO and load indices to the buffer
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]); //bind indices buffer
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW); //initialize indices data
 
-    //bind VAO to the opengl context
-    glBindVertexArray(vaoHandle);
-    //bind buffer data to vertex shader attributes and enable
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(positionData.size() * sizeof(vec3)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, (void*)((positionData.size() + normalsData.size()) * sizeof(vec3)));
-    glEnableVertexAttribArray(3);
+    glBindVertexArray(vaoHandle);//bind vao
 
-    glBindVertexArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0); //positions to 0
+    glEnableVertexAttribArray(0); //enable attribute
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)(positionData.size() * sizeof(vec3))); //normals to 2
+    glEnableVertexAttribArray(2); //enable attribute
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, (void*)((positionData.size() + normalsData.size()) * sizeof(vec3))); //UVs to 3
+    glEnableVertexAttribArray(3); //enable attribute
+
+    glBindVertexArray(0); //unbind vao
 }
 
-void Model::loadFileModel(std::string filePath) {
-
-    vector<vec3> positionData;
-    vector<vec3> normalsData;
-    vector<glm::vec2> textureData;
+void Model::loadFileModel(std::string filePath) 
+{
+    vector<vec3> positions;
+    vector<vec3> normals;
+    vector<glm::vec2> texCoords;
     vector<GLuint> indices;
 
     std::cout << "loading model from file '" << filePath << "'" << std::endl;
     std::ifstream fileStream(filePath, std::ios::in);
-
     if (!fileStream) return;
-    loadOBJ(&fileStream, &indices, &positionData, &normalsData,&textureData);
+
+    loadOBJ(&fileStream, &indices, &positions, &normals,&texCoords);
 
     fileStream.close();
 
     indicesCount = indices.size();
-    loadBufferData(positionData, normalsData,textureData, indices);
+    loadBufferData(positions, normals,texCoords, indices);
 }
 
 void Model::drawModel() {
@@ -193,8 +195,6 @@ void Model::drawModel() {
     program->setUniform("mtl.diffuseReflectivity", mtl.diffuseReflectivity);
     program->setUniform("mtl.specularReflectivity", mtl.specularReflectivity);
     program->setUniform("mtl.specularPower", mtl.specularPower);
-
-    //set shading flags
     program->setUniform("mtl.shadeFlat", mtl.shadeFlat);
     program->setUniform("mtl.perFragment", mtl.perFragment);
 
@@ -208,6 +208,6 @@ void Model::drawModel() {
 
     //draw model
     glBindVertexArray(vaoHandle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]);
-    glDrawElements(drawMode, indicesCount, GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboHandles[1]); //bind indices buffer
+    glDrawElements(drawMode, indicesCount, GL_UNSIGNED_INT, 0); //draw elements from indices
 }

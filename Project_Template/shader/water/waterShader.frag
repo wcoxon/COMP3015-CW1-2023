@@ -1,52 +1,24 @@
 #version 460
-#define NR_POINT_LIGHTS 2
-#define NR_DIR_LIGHTS 1
 
-//subroutine void RenderPassType();
-//subroutine uniform RenderPassType RenderPass;
-
-in vec3 gPos; //world
-in vec3 gNor; //world
+in vec3 gPos; // world
+in vec3 gNor; // world
 in vec2 gTex;
 in vec3 gLight;
-in vec3 gColor;
 
-layout (location = 0) out vec4 FragColor;
+out vec4 FragColor;
 
-uniform mat4 view;
-uniform mat4 projection;
-uniform mat4 model;
-
+// uniforms
 uniform vec3 boatPosition;
 uniform float boatSpeed;
 
-
 uniform float time;
+uniform float waveSpeed;
 
 uniform sampler2D colourTexture;
 uniform sampler2D normalMap;
-uniform samplerCubeArray pointDepthMaps;
-uniform sampler2DArray directionalDepthMaps;
-layout(binding = 4) uniform samplerCube skybox;
+uniform samplerCube skybox;
 
-uniform struct pointLight {
-    int lightType;
-    int textureID;
-    mat4 transform;
-    float lightIntensity;
-    vec3 lightColour;
-    float far_plane;
-} lights[NR_POINT_LIGHTS];
-
-uniform struct directionalLight {
-    int textureID;
-    mat4 transform;
-    mat4 project;
-    vec3 direction;
-    float lightIntensity;
-    vec3 lightColour;
-    float far_plane;
-} directionalLights[NR_DIR_LIGHTS];
+layout(binding = 5) uniform sampler2D foamTexture;
 
 uniform struct material {
     float ambientReflectivity;
@@ -58,62 +30,70 @@ uniform struct material {
     bool shadeFlat;
 } mtl;
 
-vec4 volumetricLight(float stride, vec3 fragPos);
 
-vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
-
-vec3 getViewDirection();
-
+// common.frag stubs
 vec3 viewPos;
-
 float diffuse;
 float specular;
+vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour);
 
-void main() 
+
+void main()
 {
-    if(mtl.perFragment) {
-        vec2 waterV1 = vec2(-0.05,-0.02);
-        vec2 waterV2 = vec2(-0.01,0.05);
-
-        vec3 normalMapSamples[2] = {
-            texture(normalMap,gPos.xz/30.0f+waterV1*time).xyz*2.0-1.0,
-            texture(normalMap,gPos.xz/30.0f+waterV2*time).xyz*2.0-1.0
-        };
-    
-        vec3 T = normalize(cross(gNor,vec3(0,0,1)));
-        vec3 B = normalize(cross(gNor,T));
-        mat3 TBN = mat3(T,B,gNor);
-        vec3 normal = TBN* normalMapSamples[0];
-        
-        normal = normalize(normal);
-    
-        T = normalize(cross(normal,vec3(0,0,1)));
-        B = normalize(cross(normal,T));
-        TBN = mat3(T,B,normal);
-        normal = TBN * normalMapSamples[1];
-
-        normal = normalize(normal);
-
-
-        vec4 waterColour = texture(colourTexture,gTex);
-        vec4 foamColour = vec4(1);
-
-        float foamStart = (boatSpeed/10)*5;
-        float foamEnd = (boatSpeed/10)*6;
-        float foamFade = foamEnd-foamStart;
-
-        float mixFactor = clamp((distance(gPos, boatPosition) - foamStart)/foamFade,0,1);
-
-        vec4 mixColour = mix(foamColour,waterColour,mixFactor);
-
-        diffuse = mix(1,mtl.diffuseReflectivity,mixFactor);
-        specular = mix(0,mtl.specularReflectivity,mixFactor);
-
-        vec3 mixNormal = normalize(mix(gNor,normal,mixFactor));
-
-
-        FragColor =  vec4(computeLight(gPos,mixNormal,mixColour),1);
-
+    if(!mtl.perFragment){
+        FragColor = vec4(gLight,1)*texture(colourTexture,gTex);
+        return;
     }
-    else FragColor = vec4(gLight,1)*texture(colourTexture,gTex);
+
+    vec2 worldTextureCoords = gPos.xz/30.0f;
+    
+    //foam and water blending
+    vec4 waterColour = texture(colourTexture,worldTextureCoords);
+    vec4 foamColour = texture(foamTexture,worldTextureCoords);
+
+    float foamStart = boatSpeed*0.2; 
+    float foamEnd = boatSpeed*0.4;
+    float foamFade = foamEnd-foamStart;
+
+    float mixFactor = clamp((distance(gPos, boatPosition) - foamStart)/foamFade,0,1);
+
+    vec4 mixColour = mix(foamColour,waterColour,mixFactor);
+
+    diffuse = mix(1,mtl.diffuseReflectivity,mixFactor);
+    specular = mix(0,mtl.specularReflectivity,mixFactor);
+
+    //normal mapping
+    vec2 rippleDisplacement0 = vec2(1,0)*time/30.f;
+    vec2 rippleDisplacement1 = vec2(0,1)*time/30.f;
+
+    vec3 normalMapSamples[2] = {
+        texture(normalMap, worldTextureCoords+rippleDisplacement0).xyz*2 - 1,
+        texture(normalMap, worldTextureCoords+rippleDisplacement1).xyz*2 - 1
+    };
+
+
+    
+    vec3 normal = normalize(gNor);
+
+    vec3 T = cross(normal,vec3(0,0,-1));
+    vec3 B = cross(normal,T);
+    mat3 TBN = mat3(T,B,normal);
+    normal = TBN * normalMapSamples[0];
+
+    normal = normalize(normal);
+
+    T = cross(normal,vec3(0,0,1));
+    B = cross(normal,T);
+    TBN = mat3(T,B,normal);
+    normal = TBN * normalMapSamples[1];
+
+    normal = normalize(normal);
+
+    //vec3 viewToFrag = gPos-viewPos;
+    //vec4 skyboxReflection = texture(skybox,reflect(viewToFrag,normal));
+
+    //FragColor = skyboxReflection;
+    //FragColor =  vec4(normal,1);
+    FragColor =  vec4(computeLight(gPos,normal,mixColour),1);
+
 }

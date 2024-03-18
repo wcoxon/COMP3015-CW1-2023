@@ -3,18 +3,14 @@
 #define NR_DIR_LIGHTS 1
 
 layout (triangles) in;
-
 in vec3 vPos[3];
 in vec3 vNor[3];
 in vec2 vTex[3];
-in vec3 vColor[3];
 
 layout (triangle_strip, max_vertices = 3) out;
-
 out vec3 gPos;
 out vec3 gNor;
 out vec2 gTex;
-out vec3 gColor;
 out vec3 gLight;
 out mat3 TBN;
 
@@ -60,32 +56,14 @@ float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 Normal){
     return mtl.specularReflectivity*pow(max(dot(h,Normal),0),mtl.specularPower);
 }
 
-
-//unit length of wave
-//float wavelength = 2;
-//units per second
-//float speed = 2;
-//vertical scale
-//float amplitude = 1;
-
 void main() {
-
-
-    
-
-    gColor = vColor[0];
 
     vec3 localViewPos = vec3(0,0,0);
     vec3 worldViewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
     
     for(int x = 0; x<3;x++){
 
-        
-        //vec3 waveDisplacement = vec3(0, amplitude*sin(vPos[x].x/wavelength+time*speed), 0);
-        //vec3 waveNormal = vec3((amplitude/wavelength)*-cos(vPos[x].x/wavelength+time*speed), 1, 0);
-
         gPos = (model*vec4(vPos[x],1)).xyz;
-        //gPos += waveDisplacement;
 
         gTex = vTex[x];
 

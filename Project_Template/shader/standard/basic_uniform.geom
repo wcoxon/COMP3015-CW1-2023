@@ -5,17 +5,13 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 
-
-in vec3 vPos[3]; //world
-in vec3 vNor[3]; //local
+in vec3 vPos[3]; // world
+in vec3 vNor[3]; // local
 in vec2 vTex[3];
-in vec3 vColor[3];
 
-out vec3 gPos; //world
+out vec3 gPos; // world
 out vec3 gNor; // world
-//out vec3 tangent; // world
 out vec2 gTex;
-out vec3 gColor;
 out vec3 gLight;
 out mat3 TBN;
 
@@ -132,7 +128,6 @@ vec3 gouraudLighting(vec3 Pos, vec3 Nor){
 
 
 void main() {
-    gColor = vColor[0];
 
     //get the change in position over each edge (world)
     vec3 edge1 = vPos[1] - vPos[0];

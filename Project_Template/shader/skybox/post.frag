@@ -28,8 +28,8 @@ vec4 volumetricLight(float stride, vec3 fragPos){
     int steps = int(ceil(fragDistance/stride));
 
     vec3 reflectColour = vec3(1);
-    float density = 0.01;
-    float scatterPerUnit = 0.02;
+    float density = 0.04;
+	float scatterPerUnit = 0.001;
     
     directionalLight dirLight = directionalLights[0];
     
@@ -75,7 +75,7 @@ void main()
 
     //vec3 fragWorldPos = viewPos+fragDirection*50;
     //colour = vec4(fragmentWorldSpace.xyz/50,1);
-    colour = vec4(volumetricLight(0.1,fragWorldSpace.xyz*50).xyz,1);
+    colour = vec4(volumetricLight(1.6,fragWorldSpace.xyz*50).xyz,1);
     
 
 	gl_FragDepth = 1;

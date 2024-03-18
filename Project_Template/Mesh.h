@@ -16,7 +16,7 @@ struct Texture {
     GLuint handle;
     std::string name;
 
-    Texture(vec3 defaultColour = vec3(0));
+    Texture(vec3 defaultColour = vec3(1,0,1));
     void load(std::string filePath);
 };
 
@@ -24,7 +24,7 @@ struct Material {
 
     bool shadeFlat = false;
 
-    float ambientReflectivity{ .1 };
+    float ambientReflectivity{ .5 };
     float diffuseReflectivity{ .5 };
     float specularReflectivity{ .5 };
     int specularPower{ 10 };
@@ -43,7 +43,7 @@ public:
     GLuint drawMode = GL_TRIANGLES;
     //vector<Texture> textures;
 
-    Texture colourTexture{ Texture(vec3(1.0f)) };
+    Texture colourTexture{ Texture() };
     Texture normalMap{ Texture(vec3(0.5,0.5,1.)) };
 
     int verticesCount;

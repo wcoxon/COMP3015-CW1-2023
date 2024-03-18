@@ -178,10 +178,10 @@ private:
         Model* water = scene.sceneModels[0];
 
 
-        float boatAcceleration = 20.f;
-        float boatDeceleration = -20.0f;
+        float boatAcceleration = 50.f;
+        float boatDeceleration = -50.0f;
 
-        float maxSpeed = 10.f;
+        float maxSpeed = 50.f;
 
         vec3 boatVelocity = vec3(0);
 
@@ -227,8 +227,8 @@ private:
 
             boat->translate(movementVector);
 
-            if (glfwGetKey(window, GLFW_KEY_1)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            if (glfwGetKey(window, GLFW_KEY_2)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            if (glfwGetKey(window, GLFW_KEY_Z)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            if (glfwGetKey(window, GLFW_KEY_X)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
             if (glfwGetKey(window, GLFW_KEY_3)) {
                 boat->program->use();
