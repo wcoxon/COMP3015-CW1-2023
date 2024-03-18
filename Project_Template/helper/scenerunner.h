@@ -18,8 +18,16 @@
 using glm::vec3;
 
 
-#define GAMMA_CORRECTION_ON_KEY GLFW_KEY_G
-#define GAMMA_CORRECTION_OFF_KEY GLFW_KEY_H
+#define DISABLE_KEY GLFW_KEY_LEFT_SHIFT
+
+#define GAMMA_CORRECTION_KEY GLFW_KEY_G
+
+#define FOG_KEY GLFW_KEY_F
+#define SKYFOG_KEY GLFW_KEY_R
+
+#define VOLUMETRICS_KEY GLFW_KEY_V
+
+#define WIREFRAME_KEY GLFW_KEY_1
 
 Scene* mainScene;
 
@@ -185,6 +193,7 @@ private:
         double lastFrameTime = glfwGetTime();
 
         vec3 cameraArm = vec3(0, 5, 10);
+        float cameraAdjustSpeed = 15;
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
@@ -233,57 +242,55 @@ private:
 
             boat->translate(movementVector);
 
-            if (glfwGetKey(window, GLFW_KEY_Z)) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            if (glfwGetKey(window, GLFW_KEY_X)) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-            if (glfwGetKey(window, GLFW_KEY_3)) {
-                boat->program->use();
-                boat->program->setUniform("volumetricLighting", true);
-                scene.sceneModels[0]->program->use();
-                scene.sceneModels[0]->program->setUniform("volumetricLighting", true);
-            }
-            if (glfwGetKey(window, GLFW_KEY_4)) {
-                boat->program->use();
-                boat->program->setUniform("volumetricLighting", false);
-                scene.sceneModels[0]->program->use();
-                scene.sceneModels[0]->program->setUniform("volumetricLighting", false);
-            }
 
             if (glfwGetKey(window, GLFW_KEY_UP)) {
-                cameraArm.z -= 15 * deltaTime;
+                cameraArm.z -= cameraAdjustSpeed * deltaTime;
             }
             if (glfwGetKey(window, GLFW_KEY_DOWN)) {
-                cameraArm.z += 15*deltaTime;
+                cameraArm.z += cameraAdjustSpeed * deltaTime;
             }
             if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
-                cameraArm.x += 15 * deltaTime;
+                cameraArm.x += cameraAdjustSpeed * deltaTime;
             }
             if (glfwGetKey(window, GLFW_KEY_LEFT)) {
-                cameraArm.x -= 15 * deltaTime;
+                cameraArm.x -= cameraAdjustSpeed * deltaTime;
             }
             if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-                cameraArm.y += 15 * deltaTime;
+                cameraArm.y += cameraAdjustSpeed * deltaTime;
             }
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
-                cameraArm.y -= 15 * deltaTime;
+                cameraArm.y -= cameraAdjustSpeed * deltaTime;
             }
 
-            if (glfwGetKey(window, GAMMA_CORRECTION_ON_KEY)) {
-                boat->program->use();
-                boat->program->setUniform("gammaCorrection", true);
-                water->program->use();
-                water->program->setUniform("gammaCorrection", true);
-                scene.skybox.program->use();
-                scene.skybox.program->setUniform("gammaCorrection", true);
+            bool enable = !glfwGetKey(window, DISABLE_KEY);
+
+            if (glfwGetKey(window, WIREFRAME_KEY)) {
+                glPolygonMode(GL_FRONT_AND_BACK, enable ? GL_LINE : GL_FILL);
             }
-            if (glfwGetKey(window, GAMMA_CORRECTION_OFF_KEY)) {
+
+            if (glfwGetKey(window, GAMMA_CORRECTION_KEY)) {
                 boat->program->use();
-                boat->program->setUniform("gammaCorrection", false);
+                boat->program->setUniform("gammaCorrection", enable);
                 water->program->use();
-                water->program->setUniform("gammaCorrection", false);
+                water->program->setUniform("gammaCorrection", enable);
                 scene.skybox.program->use();
-                scene.skybox.program->setUniform("gammaCorrection", false);
+                scene.skybox.program->setUniform("gammaCorrection", enable);
             }
+
+            if (glfwGetKey(window, FOG_KEY)) {
+                boat->program->use();
+                boat->program->setUniform("enableFog", enable);
+                water->program->use();
+                water->program->setUniform("enableFog", enable);
+            }
+            if (glfwGetKey(window, SKYFOG_KEY)) {
+                boat->program->use();
+                boat->program->setUniform("skyboxFog", enable);
+                water->program->use();
+                water->program->setUniform("skyboxFog", enable);
+            }
+
+
 
             boat->updateMatrix();
             vec3 targetPosition = boat->position + vec3(boat->transform * glm::vec4(cameraArm, 0));

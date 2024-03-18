@@ -18,6 +18,8 @@ void main()
 
     position.y += waveHeight;
 
+
+
     // output patch point position in clip space
     gl_Position = position;
 }

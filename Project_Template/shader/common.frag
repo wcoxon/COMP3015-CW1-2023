@@ -53,6 +53,9 @@ uniform struct material {
 uniform bool volumetricLighting = false;
 uniform bool gammaCorrection = false;
 
+uniform bool enableFog = false;
+uniform bool skyboxFog = false;
+
 // parameters
 vec3 viewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
 
@@ -62,8 +65,6 @@ float specular = mtl.diffuseReflectivity;
 float fogStart = 80;
 float fogEnd = 250;
 vec4 fogColour = vec4(0.5,0.5,0.5,1);
-bool enableFog = false;
-bool skyboxFog = false;
 
 bool reflectSkybox = false;
 
@@ -75,7 +76,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
 	int steps = int(ceil(fragDistance/stride));
 
 	vec3 reflectColour = vec3(1);
-	float density = 0.09;
+	float density = 0.04;
 	float scatterPerUnit = 0.002;
 	
 	directionalLight dirLight = directionalLights[0];

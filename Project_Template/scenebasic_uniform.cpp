@@ -123,8 +123,8 @@ Model* wall;
 Model* boat;
 
 //flat shading, ambient, diffuse, specular, power, perfragment
-Material waterMaterial{ false, .5f, .1f, 1.f, 64 };
-Material wallMaterial{ true, .5f, 1.f, 0.2f };
+Material waterMaterial{ false, .5f, .5f, .9f, 64 };
+Material wallMaterial{ true, .5f, 1.f, 0.0f };
 
 Texture* foamTexture;
 
@@ -174,7 +174,7 @@ void SceneBasic_Uniform::initScene()
     ball->program = &prog;
     ball->loadFileModel("./media/ball.obj");
     ball->position = vec3(-2, 1, 5);
-    ball->scale = vec3(3.0);
+    ball->scale = vec3(5.0);
     ball->mtl.shadeFlat = false;
     ball->mtl.perFragment = false;
     sceneModels.push_back(ball);
@@ -188,7 +188,14 @@ void SceneBasic_Uniform::initScene()
     boat->mtl.shadeFlat = true;
     sceneModels.push_back(boat);
 
-    //skybox = new Model();
+    sceneModels.push_back(new Model());
+    sceneModels.back()->program = &prog;
+    sceneModels.back()->loadFileModel("./media/wall.obj");
+    sceneModels.back()->colourTexture.load("./media/textures/pebblesC.jpg");
+    sceneModels.back()->normalMap.load("./media/textures/pebblesNormal.jpg");
+    sceneModels.back()->transform = glm::translate(glm::mat4(1.0), vec3(20, -1, -10)) * glm::scale(glm::mat4(1.0), vec3(5));
+    sceneModels.back()->mtl = wallMaterial;
+
     skybox.program = &skyboxProg;
     vector<vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
     vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
@@ -225,10 +232,11 @@ void SceneBasic_Uniform::initScene()
 
     pointLights.push_back(new PointLight());
     pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(-3, -4, -3));
-    pointLights[0]->intensity = 15;
+    pointLights[0]->intensity = 25;
     pointLights.push_back(new PointLight());
     pointLights[1]->transform = glm::translate(glm::mat4(1.0),vec3(8,-4,-5));
     pointLights[1]->colour = vec3(0,0.5,1);
+    pointLights[1]->intensity = 25;
 
 
     glGenFramebuffers(1, &dirShadowFBO);

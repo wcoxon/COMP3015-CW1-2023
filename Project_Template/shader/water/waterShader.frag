@@ -80,7 +80,7 @@ void main()
     
     //foam and water blending
     vec4 waterColour = texture(colourTexture,worldTextureCoords);
-    vec4 foamColour = texture(foamTexture,worldTextureCoords);
+    vec4 foamColour = texture(foamTexture,worldTextureCoords*20);
 
     float foamStart = boatSpeed*0.3; 
     float foamEnd = boatSpeed*0.4;
@@ -91,10 +91,9 @@ void main()
     vec4 mixColour = mix(foamColour,waterColour,mixFactor);
 
     diffuse = mix(1,mtl.diffuseReflectivity,mixFactor);
-    specular = mix(0,mtl.specularReflectivity,mixFactor);
+    specular = mix(0.2,mtl.specularReflectivity,mixFactor);
 
-    vec3 normal = waterNormal();//normalize(gNor);
-    //FragColor = texture(skybox,reflect(gPos-viewPos,normal));
+    vec3 normal = waterNormal();
     FragColor =  vec4(computeLight(gPos,normal,mixColour),1);
 
     if(gammaCorrection){

@@ -21,7 +21,7 @@ using glm::mat4;
 struct DirectionalLight {
 
     vec3 colour{ vec3(1) };
-    float intensity{ .5};
+    float intensity{ .7};
 
     float far{ 100 };
     float span{ 40 };
@@ -51,7 +51,7 @@ private:
     
 
     const unsigned int POINT_SHADOW_RESOLUTION=256;
-    const unsigned int DIRECTIONAL_SHADOW_RESOLUTION = 256;
+    const unsigned int DIRECTIONAL_SHADOW_RESOLUTION = 512;
 
     GLuint directionalTexArray;
     GLuint dirShadowFBO;
