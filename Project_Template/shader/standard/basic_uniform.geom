@@ -1,5 +1,6 @@
 #version 460
-#define NR_LIGHTS 2
+
+#define NR_POINT_LIGHTS 2
 #define NR_DIR_LIGHTS 1
 
 layout (triangles) in;
@@ -15,6 +16,7 @@ out vec2 gTex;
 out vec3 gLight;
 out mat3 TBN;
 
+// uniforms
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
@@ -26,7 +28,7 @@ uniform struct pointLight {
     float lightIntensity;
     vec3 lightColour;
     float far_plane;
-} lights[NR_LIGHTS];
+} lights[NR_POINT_LIGHTS];
 uniform samplerCubeArray pointDepthMaps;
 
 uniform struct directionalLight {
@@ -70,7 +72,7 @@ vec3 gouraudLighting(vec3 Pos, vec3 Nor){
             
             float Ambient = mtl.ambientReflectivity;
 
-            for(int lightIndex = 0; lightIndex < NR_LIGHTS; lightIndex++){
+            for(int lightIndex = 0; lightIndex < NR_POINT_LIGHTS; lightIndex++){
                 vec3 lightDir = normalize((lights[lightIndex].transform*vec4(worldVertexPos,1.0)).xyz);
 
                 vec3 lightReflectDir = lightDir - 2.0*dot(lightDir,worldVertexNor)*worldVertexNor;
@@ -151,12 +153,13 @@ void main() {
 
         gPos = vPos[x];
         gTex = vTex[x];
+        gl_Position = gl_in[x].gl_Position;
 
         // use face normal or individuals
         if(mtl.shadeFlat) {
             gNor = faceNormal;
 
-            vec3 faceBitangent = normalize(cross(faceTangent,faceNormal));
+            vec3 faceBitangent = normalize(cross(faceNormal,faceTangent));
 
             TBN = mat3(faceTangent,faceBitangent,faceNormal); //face tbn
         }
@@ -165,21 +168,15 @@ void main() {
 
             vec3 vertTangent = normalize(faceTangent - dot(faceTangent, gNor) * gNor); //orthogonalize tangent
 
-            vec3 vertBitangent = normalize(cross(vertTangent,gNor));
+            vec3 vertBitangent = normalize(cross(gNor,vertTangent));
 
             TBN = mat3(vertTangent,vertBitangent,gNor); //vertex tbn
         }
 
-        // per-vertex lighting computation
-        if(!mtl.perFragment){
-            gLight = gouraudLighting(gPos,gNor);
-        }
+        // gouraud lighting computation
+        if(!mtl.perFragment) gLight = gouraudLighting(gPos,gNor);
         
-        gl_Position = gl_in[x].gl_Position;
-
         EmitVertex();
     }
-    
     EndPrimitive();
-
 }  

@@ -103,6 +103,7 @@
     <None Include="shader\tessellation\controlDepth.tesc" />
     <None Include="shader\tessellation\evalDepth.tese" />
     <None Include="shader\tessellation\common.tesc" />
+    <None Include="shader\tessellation\common.tese" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper\scene.h">
@@ -132,5 +133,10 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="media\textures\pebblesC.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

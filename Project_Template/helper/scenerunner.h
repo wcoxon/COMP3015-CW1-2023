@@ -18,20 +18,14 @@
 using glm::vec3;
 
 
+#define GAMMA_CORRECTION_ON_KEY GLFW_KEY_G
+#define GAMMA_CORRECTION_OFF_KEY GLFW_KEY_H
 
 Scene* mainScene;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    //update viewport size when resizing the window
-    // 
-    //mainCamera->projection = glm::perspective(45.0f, (float)width / (float)height, 1.0f, mainCamera->far);
-    //glViewport(0, 0, width, height);
-    //mainScene->width = width;
-    //mainScene->height = height;
-    //mainScene->sceneCamera.projection = glm::perspective(45.0f, (float)width / (float)height, 1.0f, mainScene->sceneCamera.far);
     mainScene->resize(width, height);
-
 }
 
 
@@ -177,6 +171,7 @@ private:
         Model* boat = scene.sceneModels[4];
         Model* water = scene.sceneModels[0];
 
+        float angularAcceleration = 1.0f;
 
         float boatAcceleration = 50.f;
         float boatDeceleration = -50.0f;
@@ -185,8 +180,11 @@ private:
 
         vec3 boatVelocity = vec3(0);
 
+        float boatTurnSpeed = 0;
 
         double lastFrameTime = glfwGetTime();
+
+        vec3 cameraArm = vec3(0, 5, 10);
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
@@ -199,24 +197,32 @@ private:
             //movement stuff
             vec3 inputVector = getInputVector(window);
 
-            vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0));
-            directionVector.y = 0;
-
-            //vec3 accelerationVector;
+            vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0)); // turn input into world direction
+            directionVector.y = 0; //only direct boat on x z plane
 
             if (directionVector != vec3(0) && glm::length(boatVelocity)<maxSpeed) {
+                //rotate
+                vec3 localRight = vec3(boat->transform*glm::vec4(1, 0, 0, 0));
+                float turnScale = inputVector.x;//glm::dot(directionVector, localRight);
+
+                boat->direction = vec3(glm::rotate(glm::mat4(1), -turnScale * (float)deltaTime, vec3(0, 1, 0))*glm::vec4(boat->direction,0));
+
                 // accelerate
+                float accelerationScale = -inputVector.z;//glm::dot(directionVector, boat->direction);
+
+
                 directionVector = glm::normalize(directionVector);
 
-                vec3 accelerationVector = (float)deltaTime * boatAcceleration * directionVector;
+                vec3 accelerationVector = boat->direction * accelerationScale * (float)deltaTime * boatAcceleration;//(float)deltaTime * boatAcceleration * directionVector;
 
                 boatVelocity += accelerationVector;
 
-                boat->direction = glm::normalize(boatVelocity);
+                //boat->direction = glm::normalize(boatVelocity);
             }
-            else if(boatVelocity!=vec3(0)){
+            if(boatVelocity!=vec3(0)){
+                float deceleration = 0.1f*std::pow(glm::length(boatVelocity),2);
                 //slow down
-                boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)+boatDeceleration*(float)deltaTime,0.f);
+                boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)-deceleration*(float)deltaTime,0.f);
 
             }
             
@@ -243,6 +249,45 @@ private:
                 scene.sceneModels[0]->program->setUniform("volumetricLighting", false);
             }
 
+            if (glfwGetKey(window, GLFW_KEY_UP)) {
+                cameraArm.z -= 15 * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_DOWN)) {
+                cameraArm.z += 15*deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
+                cameraArm.x += 15 * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_LEFT)) {
+                cameraArm.x -= 15 * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+                cameraArm.y += 15 * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
+                cameraArm.y -= 15 * deltaTime;
+            }
+
+            if (glfwGetKey(window, GAMMA_CORRECTION_ON_KEY)) {
+                boat->program->use();
+                boat->program->setUniform("gammaCorrection", true);
+                water->program->use();
+                water->program->setUniform("gammaCorrection", true);
+                scene.skybox.program->use();
+                scene.skybox.program->setUniform("gammaCorrection", true);
+            }
+            if (glfwGetKey(window, GAMMA_CORRECTION_OFF_KEY)) {
+                boat->program->use();
+                boat->program->setUniform("gammaCorrection", false);
+                water->program->use();
+                water->program->setUniform("gammaCorrection", false);
+                scene.skybox.program->use();
+                scene.skybox.program->setUniform("gammaCorrection", false);
+            }
+
+            boat->updateMatrix();
+            vec3 targetPosition = boat->position + vec3(boat->transform * glm::vec4(cameraArm, 0));
+            scene.sceneCamera.position = glm::mix(scene.sceneCamera.position, targetPosition, deltaTime * 2);
             scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));
 
             scene.update(float(glfwGetTime()));

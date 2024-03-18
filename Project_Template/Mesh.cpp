@@ -23,6 +23,7 @@ Texture::Texture(vec3 defaultColour)
 
 void Texture::load(std::string filePath) 
 {
+    stbi_set_flip_vertically_on_load(true);
     glBindTexture(GL_TEXTURE_2D, handle);
 
     int width, height, nrChannels;

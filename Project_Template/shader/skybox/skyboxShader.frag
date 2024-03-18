@@ -10,7 +10,7 @@ uniform mat4 projection;
 
 layout(binding = 4) uniform samplerCube skybox;
 
-
+uniform bool gammaCorrection = false;
 
 void main()
 {
@@ -27,6 +27,12 @@ void main()
 	vec3 fragDirection = normalize(worldDirection.xyz);
 
     colour = texture(skybox,fragDirection);
+
+	if(gammaCorrection){
+		// apply gamma correction
+		float gamma = 2.2;
+		colour.rgb = pow(colour.rgb, vec3(1.0/gamma));
+    }
 
 	gl_FragDepth = 1;
 }

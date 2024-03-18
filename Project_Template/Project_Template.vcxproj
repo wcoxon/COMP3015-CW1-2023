@@ -179,6 +179,7 @@
     <None Include="shader\standard\basic_uniform.geom" />
     <None Include="shader\standard\basic_uniform.vert" />
     <None Include="shader\tessellation\common.tesc" />
+    <None Include="shader\tessellation\common.tese" />
     <None Include="shader\tessellation\control.tesc" />
     <None Include="shader\tessellation\controlDepth.tesc" />
     <None Include="shader\tessellation\eval.tese" />
@@ -199,6 +200,9 @@
     <ClInclude Include="helper\stb\stb_image_write.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="scenebasic_uniform.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="media\textures\pebblesC.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

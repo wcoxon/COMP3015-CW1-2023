@@ -29,6 +29,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : time(0.0f) {}
 
 unsigned int loadCubemap(vector<std::string> faces)
 {
+    stbi_set_flip_vertically_on_load(false);
     unsigned int textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
@@ -66,8 +67,8 @@ void generatePatches(Model* model) {
     vector<glm::vec2> quadTexCoords = {};
     vector<GLuint> quadIndices = {};
 
-    float patchesX = 64;
-    float patchesZ = 64;
+    float patchesX = 32;
+    float patchesZ = 32;
 
     for (int patchZ = 0; patchZ < patchesZ; patchZ++) {
         for (int patchX = 0; patchX < patchesX; patchX++) {
@@ -112,7 +113,7 @@ void generatePatches(Model* model) {
     model->drawMode = GL_PATCHES;
 }
 
-Model* skybox;
+//Model* skybox;
 
 Model* water;
 
@@ -122,8 +123,8 @@ Model* wall;
 Model* boat;
 
 //flat shading, ambient, diffuse, specular, power, perfragment
-Material waterMaterial{ false, .5f, .1f, 1.f, 32 };
-Material wallMaterial{ true, .5f, 1.5, 0.f };
+Material waterMaterial{ false, .5f, .1f, 1.f, 64 };
+Material wallMaterial{ true, .5f, 1.f, 0.2f };
 
 Texture* foamTexture;
 
@@ -145,16 +146,17 @@ void SceneBasic_Uniform::initScene()
     generatePatches(water);
     water->colourTexture.load("./media/textures/seaTexture - 56_sea water foam texture-seamless.jpg");
     water->normalMap.load("./media/textures/0001.png");
-    water->transform = glm::translate(mat4(1.0), vec3(0, 0, 0)) * glm::scale(glm::mat4(1.0), vec3(15));
+    water->scale = vec3(15);
     water->mtl = waterMaterial;
     sceneModels.push_back(water);
 
     foamTexture = new Texture();
-    foamTexture->load("./media/textures/foam - Bigstock_319957879.jpg");
+    foamTexture->load("./media/textures/super perlin 2 - 512x512.png");
 
     wall = new Model();
     wall->program = &prog;
     wall->loadFileModel("./media/wall.obj");
+    wall->colourTexture.load("./media/textures/pebblesC.jpg");
     wall->normalMap.load("./media/textures/pebblesNormal.jpg");
     wall->transform = glm::translate(glm::mat4(1.0), vec3(-1, -1, -20)) *glm::rotate(glm::mat4(1.0), glm::radians(-90.f), vec3(0, 1, 0))* glm::scale(glm::mat4(1.0), vec3(5));
     wall->mtl = wallMaterial;
@@ -172,7 +174,7 @@ void SceneBasic_Uniform::initScene()
     ball->program = &prog;
     ball->loadFileModel("./media/ball.obj");
     ball->position = vec3(-2, 1, 5);
-    ball->scale = vec3(5.0);
+    ball->scale = vec3(3.0);
     ball->mtl.shadeFlat = false;
     ball->mtl.perFragment = false;
     sceneModels.push_back(ball);
@@ -186,18 +188,18 @@ void SceneBasic_Uniform::initScene()
     boat->mtl.shadeFlat = true;
     sceneModels.push_back(boat);
 
-    skybox = new Model();
-    skybox->program = &skyboxProg;
+    //skybox = new Model();
+    skybox.program = &skyboxProg;
     vector<vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
     vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
     vector<std::string> skyboxTexturePaths = { "G:/skybox/skybox/right.jpg","G:/skybox/skybox/left.jpg","G:/skybox/skybox/top.jpg","G:/skybox/skybox/bottom.jpg","G:/skybox/skybox/front.jpg","G:/skybox/skybox/back.jpg" };
 
-    glBindVertexArray(skybox->vaoHandle);
-    glBindBuffer(GL_ARRAY_BUFFER, skybox->vboHandles[0]);
+    glBindVertexArray(skybox.vaoHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox.vboHandles[0]);
     glBufferData(GL_ARRAY_BUFFER, skyquadVerts.size() * sizeof(vec3), skyquadVerts.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox->vboHandles[1]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, skyquadIndices.size() * sizeof(GLuint), skyquadIndices.data(), GL_STATIC_DRAW);
     int skyboxTextureID = loadCubemap(skyboxTexturePaths);
     glActiveTexture(GL_TEXTURE4);
@@ -214,7 +216,7 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     int numLights = 2;
-    glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_DEPTH_COMPONENT24, SHADOW_RESOLUTION, SHADOW_RESOLUTION, numLights * 6);
+    glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_DEPTH_COMPONENT24, POINT_SHADOW_RESOLUTION, POINT_SHADOW_RESOLUTION, numLights * 6);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texCubeArray, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //unbind fbo
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0); //unbind texture
@@ -238,7 +240,7 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_DEPTH_COMPONENT24, SHADOW_RESOLUTION, SHADOW_RESOLUTION, 1);
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_DEPTH_COMPONENT24, DIRECTIONAL_SHADOW_RESOLUTION, DIRECTIONAL_SHADOW_RESOLUTION, 1);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, directionalTexArray, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         printf("Error: framebuffer is not complete!");
@@ -361,6 +363,7 @@ void SceneBasic_Uniform::compile()
         waterProg.compileShader("shader/water/waterShader.vert");
         waterProg.compileShader("shader/tessellation/common.tesc");
         waterProg.compileShader("shader/tessellation/control.tesc");
+        waterProg.compileShader("shader/tessellation/common.tese");
         waterProg.compileShader("shader/tessellation/eval.tese");
         waterProg.compileShader("shader/standard/basic_uniform.geom");
         waterProg.compileShader("shader/common.frag");
@@ -370,6 +373,7 @@ void SceneBasic_Uniform::compile()
         waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
         waterDirectionalShadowPass.compileShader("shader/tessellation/common.tesc");
         waterDirectionalShadowPass.compileShader("shader/tessellation/controlDepth.tesc");
+        waterDirectionalShadowPass.compileShader("shader/tessellation/common.tese");
         waterDirectionalShadowPass.compileShader("shader/tessellation/evalDepth.tese");
         waterDirectionalShadowPass.compileShader("shader/lightmapping/directionalDepthShader.geom");
         waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.frag");
@@ -378,6 +382,7 @@ void SceneBasic_Uniform::compile()
         waterPointShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
         waterPointShadowPass.compileShader("shader/tessellation/common.tesc");
         waterPointShadowPass.compileShader("shader/tessellation/controlDepth.tesc");
+        waterPointShadowPass.compileShader("shader/tessellation/common.tese");
         waterPointShadowPass.compileShader("shader/tessellation/evalDepth.tese");
         waterPointShadowPass.compileShader("shader/lightmapping/omniDepthShader.geom");
         waterPointShadowPass.compileShader("shader/lightmapping/waterDepthShader.frag");
@@ -403,23 +408,25 @@ void SceneBasic_Uniform::update( float t )
 {
     time = t;
 
-    pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(glm::sin(time) * -10.0f, -9, glm::cos(time) * -10.0f)); //move light aroundd
+    pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(glm::sin(time) * -10.0f, -9, glm::cos(time) * -10.0f)); //move light around
     
-    ball->position.y = getWaveHeight(ball->position, time); //float ball
+    ball->position.y = getWaveHeight(ball->position, time); //ball bob
     ball->updateMatrix();
 
-    boat->position.y = getWaveHeight(boat->position, time); //float boat
+    boat->position.y = getWaveHeight(boat->position, time); //boat bob
     boat->setUp(vec3((amplitude / wavelength) * -cos(boat->position.x / wavelength + time * waveSpeed), 1, 0));
     boat->direction = vec3(boat->direction.x, glm::dot(boat->direction,waveDirection) * (amplitude / wavelength) * cos(boat->position.x / wavelength + time * waveSpeed), boat->direction.z);
     boat->updateMatrix();
 
     water->program->use();
     water->program->setUniform("boatPosition", boat->position);
+    water->position = vec3(sceneCamera.position.x, 0, sceneCamera.position.z);
+    water->updateMatrix();
 }
 
 void SceneBasic_Uniform::render()
 {
-    glViewport(0, 0, SHADOW_RESOLUTION, SHADOW_RESOLUTION); //prepare viewport for shadow rendering (point)
+    glViewport(0, 0, POINT_SHADOW_RESOLUTION, POINT_SHADOW_RESOLUTION); //prepare viewport for shadow rendering (point)
      //bind and clear the point shadows fbo
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -451,7 +458,7 @@ void SceneBasic_Uniform::render()
     //unbind fbo
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glViewport(0, 0, SHADOW_RESOLUTION, SHADOW_RESOLUTION); //set viewport to shadow resolution (directional)
+    glViewport(0, 0, DIRECTIONAL_SHADOW_RESOLUTION, DIRECTIONAL_SHADOW_RESOLUTION); //set viewport to shadow resolution (directional)
     //bind and clear directional buffer
     glBindFramebuffer(GL_FRAMEBUFFER, dirShadowFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -501,11 +508,11 @@ void SceneBasic_Uniform::render()
 
     //draw skybox
     glDepthFunc(GL_LEQUAL);
-    skybox->program->use();
-    skybox->program->setUniform("view", sceneCamera.view);
-    skybox->program->setUniform("projection", sceneCamera.projection);
-    glBindVertexArray(skybox->vaoHandle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox->vboHandles[1]);
+    skybox.program->use();
+    skybox.program->setUniform("view", sceneCamera.view);
+    skybox.program->setUniform("projection", sceneCamera.projection);
+    glBindVertexArray(skybox.vaoHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0); //unbind vao

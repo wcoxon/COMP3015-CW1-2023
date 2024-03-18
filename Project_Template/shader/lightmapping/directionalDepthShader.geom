@@ -11,21 +11,15 @@ uniform struct DirectionalLight{
     mat4 project;
 } lights[LIGHT_NR];
 
-//out vec3 lightPos;
 out float dist;
-//out vec4 FragPos; // FragPos from GS (output per emitvertex)
-//vec4 FragPos;
+
 void main()
 {
     for(int lightIndex = 0; lightIndex < LIGHT_NR; lightIndex++){
         gl_Layer = lightIndex;
         for(int vertex = 0; vertex < 3; vertex++) // for each triangle vertex
         {
-            
-            gl_Position = 
-                lights[lightIndex].project*
-                lights[lightIndex].transform*
-                gl_in[vertex].gl_Position;
+            gl_Position = lights[lightIndex].project*lights[lightIndex].transform*gl_in[vertex].gl_Position;
 
             dist = (gl_Position.z+1)/2;
             EmitVertex();

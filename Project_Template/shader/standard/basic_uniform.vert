@@ -16,7 +16,6 @@ uniform mat4 projection;
 void main()
 {
     vec4 worldPos = model*vec4(VertexPosition,1);
-
     vPos = worldPos.xyz;
     vNor = VertexNormal;
     vTex = VertexTextureCoord;

@@ -21,6 +21,9 @@ public:
     int width;
     int height;
 
+
+    Model skybox;
+
     Camera sceneCamera;
     vector<Model*> sceneModels;
 

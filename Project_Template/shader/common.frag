@@ -46,27 +46,37 @@ uniform struct material {
 	float diffuseReflectivity;
 	float specularReflectivity;
 	int specularPower;
-
 	bool perFragment;
 	bool shadeFlat;
 } mtl;
 
 uniform bool volumetricLighting = false;
+uniform bool gammaCorrection = false;
 
-
-float diffuse;
-float specular;
-
+// parameters
 vec3 viewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
 
+float diffuse = mtl.diffuseReflectivity;
+float specular = mtl.diffuseReflectivity;
+
+float fogStart = 80;
+float fogEnd = 250;
+vec4 fogColour = vec4(0.5,0.5,0.5,1);
+bool enableFog = false;
+bool skyboxFog = false;
+
+bool reflectSkybox = false;
+
+
+// functions
 vec4 volumetricLight(float stride, vec3 fragPos){
 	vec3 viewToFrag = fragPos-viewPos;
 	float fragDistance = length(viewToFrag);
 	int steps = int(ceil(fragDistance/stride));
 
 	vec3 reflectColour = vec3(1);
-	float density = 0.04;
-	float scatterPerUnit = 0.001;
+	float density = 0.09;
+	float scatterPerUnit = 0.002;
 	
 	directionalLight dirLight = directionalLights[0];
 	
@@ -119,6 +129,7 @@ vec4 volumetricLight(float stride, vec3 fragPos){
 	}
 	float transmittance = exp(-fragDistance*density);
 	float opacity = clamp(transmittance,0,1);
+
 	return vec4(reflectedLight.rgb*reflectColour,opacity);
 }
 
@@ -126,20 +137,11 @@ float phongSpecular(vec3 lightDir,vec3 viewDir,vec3 fragNormal){
 	vec3 lightReflectDir = lightDir - 2.0*dot(lightDir,fragNormal)*fragNormal;
 	return mtl.specularReflectivity * pow(max(-dot(normalize(lightReflectDir),viewDir),0),mtl.specularPower);
 }
+
 float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 fragNormal){
 	vec3 h = -normalize(lightDir+viewDir);
 	return specular*pow(max(dot(h,fragNormal),0),mtl.specularPower); //mtl.specularReflectivity*pow(max(dot(h,fragNormal),0),mtl.specularPower);
 }
-
-float fogStart = 80;
-float fogEnd = 250;
-vec4 fogColour = vec4(0.5,0.5,0.5,1);
-
-bool enableFog = false;
-bool skyboxFog = false;
-
-
-bool reflectSkybox = true;
 
 //Position (world), Normal (world)
 vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
