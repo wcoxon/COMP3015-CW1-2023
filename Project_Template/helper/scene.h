@@ -10,6 +10,9 @@
 #include "Camera.h"
 #include "Mesh.h";
 
+#include "DirectionalLight.h"
+#include "PointLight.h"
+
 using std::vector;
 
 class Scene
@@ -26,6 +29,9 @@ public:
 
     Camera sceneCamera;
     vector<Model*> sceneModels;
+
+    vector<PointLight*> pointLights;
+    vector<DirectionalLight*> directionalLights;
 
 	Scene() : m_animate(true), width(800), height(600) { }
 	virtual ~Scene() {}

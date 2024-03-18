@@ -202,15 +202,15 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 
 		// calculate whether light hits fragment
 
-		vec4 lightSpacePos = light.project* light.transform *vec4(Pos,1);
+		vec4 lightClipPos = light.project * light.transform * vec4(Pos,1);
 
-		vec3 depthCoords = (lightSpacePos.xyz / lightSpacePos.w + 1)/2;
+		vec3 depthCoords = (lightClipPos.xyz / lightClipPos.w + 1)/2;
 
 		float lightDepth = texture(directionalDepthMaps,depthCoords).r;
 		
 		float bias = 0.01;
 
-		bool outOfClipSpace = (abs(lightSpacePos.x)>1)||(abs(lightSpacePos.y)>1)||(abs(lightSpacePos.z)>1);
+		bool outOfClipSpace = (abs(lightClipPos.x)>1)||(abs(lightClipPos.y)>1)||(abs(lightClipPos.z)>1);
 
 		if((depthCoords.z -  bias) < lightDepth || outOfClipSpace){
 			//calculate reflections

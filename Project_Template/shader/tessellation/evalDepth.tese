@@ -20,6 +20,6 @@ void main()
 
 
 
-    // output patch point position in clip space
+    // output patch point position in world space
     gl_Position = position;
 }

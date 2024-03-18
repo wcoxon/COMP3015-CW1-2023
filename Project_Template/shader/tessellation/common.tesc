@@ -11,7 +11,7 @@ out vec3 tcNor[]; // local
 out vec2 tcTex[];
 
 // uniforms
-uniform mat4 view;
+uniform mat4 view; // SCENE CAMERA view
 
 uniform vec3 boatPosition;
 

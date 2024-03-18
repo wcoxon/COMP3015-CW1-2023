@@ -15,6 +15,9 @@
 #include "scene.h"
 #include "Camera.h"
 
+#include "DirectionalLight.h"
+
+
 using glm::vec3;
 
 
@@ -192,16 +195,29 @@ private:
 
         double lastFrameTime = glfwGetTime();
 
-        vec3 cameraArm = vec3(0, 5, 10);
+        vec3 cameraArm = vec3(0, 10, 15);
         float cameraAdjustSpeed = 15;
+
+        double cursorX;
+        double cursorY;
+        //scene.directionalLights[0]->view = glm::lookAt(vec3(0.0f, 20.0f, 20.f), vec3(0.0f,0.0f,0.0f), vec3(0.f, 1.f, 0.f));//glm::lookAt(vec3(cos(cursorX / scene.width), 20, sin(cursorX / scene.width) ), vec3(0), vec3(0, 1, 0));
+
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
-			
+
+            glfwGetCursorPos(window, &cursorX, &cursorY);
+            scene.directionalLights[0]->view = glm::lookAt(vec3(cos(glm::two_pi<float>()*cursorX / scene.width)*20, 20, sin(glm::two_pi<float>() * cursorX / scene.width)*20 ), vec3(0,0,0), vec3(0, 1, 0));
+
+
+
+
             //calculating delta time
             double currentFrameTime = glfwGetTime();
             double deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
+
+            
 
             //movement stuff
             vec3 inputVector = getInputVector(window);

@@ -257,7 +257,7 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0); //unbind texture
 
     directionalLights.push_back(new DirectionalLight());
-    directionalLights[0]->view = glm::lookAt(vec3(-20.f, 20.f, -20.f), vec3(0.f, 0.f, 0.f), vec3(0.0f, 1.0f, 0.0f));
+    directionalLights[0]->view = glm::lookAt(vec3(-20.0f, 20.0f, 0.f), vec3(0.0f, 0.0f, 0.0f), vec3(0.f, 1.f, 0.f));
 
     shadowProg.use();
     shadowProg.printActiveUniforms();
@@ -443,7 +443,7 @@ void SceneBasic_Uniform::render()
         
         if (model->program == &waterProg) {
             waterPointShadowPass.use();
-            waterPointShadowPass.setUniform("cameraView", sceneCamera.view);
+            waterPointShadowPass.setUniform("view", sceneCamera.view);
             waterPointShadowPass.setUniform("model", model->transform);
             waterPointShadowPass.setUniform("time", time);
             waterPointShadowPass.setUniform("lights[0].transform", pointLights[0]->transform);
@@ -475,14 +475,16 @@ void SceneBasic_Uniform::render()
         
         if (model->program == &waterProg) {
             waterDirectionalShadowPass.use();
-            waterDirectionalShadowPass.setUniform("cameraView", sceneCamera.view);
+            waterDirectionalShadowPass.setUniform("view", sceneCamera.view);
             waterDirectionalShadowPass.setUniform("model", model->transform);
             waterDirectionalShadowPass.setUniform("time", time);
             waterDirectionalShadowPass.setUniform("boatPosition", boat->position);
+            waterDirectionalShadowPass.setUniform("lights[0].transform", directionalLights[0]->view);
         }
         else {
             directionalShadowProg.use();
             directionalShadowProg.setUniform("model", model->transform);
+            directionalShadowProg.setUniform("lights[0].transform", directionalLights[0]->view);
         }
 
         //render directional light depthmap
@@ -504,6 +506,7 @@ void SceneBasic_Uniform::render()
         model->program->setUniform("view", sceneCamera.view);
         model->program->setUniform("projection", sceneCamera.projection);
         model->program->setUniform("lights[0].transform", pointLights[0]->transform);
+        model->program->setUniform("directionalLights[0].transform", directionalLights[0]->view);
         model->program->setUniform("time", time);
 
         if (model->program == &waterProg) {
