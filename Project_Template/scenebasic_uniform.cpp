@@ -199,7 +199,7 @@ void SceneBasic_Uniform::initScene()
     skybox.program = &skyboxProg;
     vector<vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
     vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
-    vector<std::string> skyboxTexturePaths = { "G:/skybox/skybox/right.jpg","G:/skybox/skybox/left.jpg","G:/skybox/skybox/top.jpg","G:/skybox/skybox/bottom.jpg","G:/skybox/skybox/front.jpg","G:/skybox/skybox/back.jpg" };
+    vector<std::string> skyboxTexturePaths = { "./media/textures/skybox/right.jpg","./media/textures/skybox/left.jpg","./media/textures/skybox/top.jpg","./media/textures/skybox/bottom.jpg","./media/textures/skybox/front.jpg","./media/textures/skybox/back.jpg" };
 
     glBindVertexArray(skybox.vaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, skybox.vboHandles[0]);
@@ -399,7 +399,6 @@ void SceneBasic_Uniform::compile()
 
         skyboxProg.compileShader("shader/skybox/skyboxShader.vert");
         skyboxProg.compileShader("shader/skybox/skyboxShader.frag");
-        //skyboxProg.compileShader("shader/skybox/post.frag");
         skyboxProg.link();
 
 	} catch (GLSLProgramException &e) {
