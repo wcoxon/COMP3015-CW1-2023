@@ -123,8 +123,8 @@ Model* wall;
 Model* boat;
 
 //flat shading, ambient, diffuse, specular, power, perfragment
-Material waterMaterial{ false, .5f, .5f, .9f, 64 };
-Material wallMaterial{ true, .5f, 1.f, 0.0f };
+Material waterMaterial{ false, .4f, .3f, .8f, 64 };
+Material wallMaterial{ true, .4f, 1.f, 0.0f };
 
 Texture* foamTexture;
 
@@ -197,8 +197,8 @@ void SceneBasic_Uniform::initScene()
     sceneModels.back()->mtl = wallMaterial;
 
     skybox.program = &skyboxProg;
-    vector<vec3> skyquadVerts = { {-1,-1,-1},{-1,1,-1} ,{1,-1,-1} ,{1,1,-1} };
-    vector<GLuint> skyquadIndices = { 0,1,2, 1,2,3 };
+    vector<vec3> skyquadVerts = { {-1,-3,-1}, {-1,1,-1}, {3,1,-1} };
+    vector<GLuint> skyquadIndices = { 0,1,2 };
     vector<std::string> skyboxTexturePaths = { "./media/textures/skybox/right.jpg","./media/textures/skybox/left.jpg","./media/textures/skybox/top.jpg","./media/textures/skybox/bottom.jpg","./media/textures/skybox/front.jpg","./media/textures/skybox/back.jpg" };
 
     glBindVertexArray(skybox.vaoHandle);
@@ -232,7 +232,7 @@ void SceneBasic_Uniform::initScene()
 
     pointLights.push_back(new PointLight());
     pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(-3, -4, -3));
-    pointLights[0]->intensity = 25;
+    pointLights[0]->intensity = 35;
     pointLights.push_back(new PointLight());
     pointLights[1]->transform = glm::translate(glm::mat4(1.0),vec3(8,-4,-5));
     pointLights[1]->colour = vec3(0,0.5,1);
@@ -341,12 +341,6 @@ void SceneBasic_Uniform::initScene()
     skyboxProg.use();
     skyboxProg.setUniform("view", sceneCamera.view);
     skyboxProg.setUniform("projection", sceneCamera.projection);
-    skyboxProg.setUniform("directionalLights[0].lightIntensity", directionalLights[0]->intensity);
-    skyboxProg.setUniform("directionalLights[0].lightColour", directionalLights[0]->colour);
-    skyboxProg.setUniform("directionalLights[0].textureID", 0);
-    skyboxProg.setUniform("directionalLights[0].project", directionalLights[0]->projection);
-    skyboxProg.setUniform("directionalLights[0].transform", directionalLights[0]->view);
-    skyboxProg.setUniform("directionalLights[0].far_plane", directionalLights[0]->far);
 }
 
 void SceneBasic_Uniform::compile()
@@ -364,19 +358,21 @@ void SceneBasic_Uniform::compile()
 
 		prog.compileShader("shader/standard/basic_uniform.vert");
         prog.compileShader("shader/standard/basic_uniform.geom");
-        prog.compileShader("shader/common.frag");
+        prog.compileShader("shader/common.frag"); //fragment shader
 		prog.compileShader("shader/standard/basic_uniform.frag");
 		prog.link();
 
-        waterProg.compileShader("shader/water/waterShader.vert");
-        waterProg.compileShader("shader/tessellation/common.tesc");
+
+        waterProg.compileShader("shader/water/waterShader.vert"); // pass through vertex shader
+        waterProg.compileShader("shader/tessellation/common.tesc");  // tessellation control shader
         waterProg.compileShader("shader/tessellation/control.tesc");
-        waterProg.compileShader("shader/tessellation/common.tese");
+        waterProg.compileShader("shader/tessellation/common.tese");  // tessellation evaluation shader
         waterProg.compileShader("shader/tessellation/eval.tese");
-        waterProg.compileShader("shader/standard/basic_uniform.geom");
-        waterProg.compileShader("shader/common.frag");
+        waterProg.compileShader("shader/standard/basic_uniform.geom"); // geometry shader
+        waterProg.compileShader("shader/common.frag"); //fragment shader
         waterProg.compileShader("shader/water/waterShader.frag");
         waterProg.link();
+
 
         waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
         waterDirectionalShadowPass.compileShader("shader/tessellation/common.tesc");
@@ -386,6 +382,7 @@ void SceneBasic_Uniform::compile()
         waterDirectionalShadowPass.compileShader("shader/lightmapping/directionalDepthShader.geom");
         waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.frag");
         waterDirectionalShadowPass.link();
+
 
         waterPointShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
         waterPointShadowPass.compileShader("shader/tessellation/common.tesc");

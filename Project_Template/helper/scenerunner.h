@@ -175,6 +175,34 @@ private:
         return inputVector;
     }
 
+    vec3 getCameraInputVector() {
+
+        vec3 inputVector = vec3(0);
+
+        if (glfwGetKey(window, GLFW_KEY_UP)) {
+            inputVector.z -= 1;// cameraAdjustSpeed* deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN)) {
+            inputVector.z += 1;// cameraAdjustSpeed* deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
+            inputVector.x += 1;// cameraAdjustSpeed* deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT)) {
+            inputVector.x -= 1;// cameraAdjustSpeed* deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+            inputVector.y += 1;// cameraAdjustSpeed* deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
+            inputVector.y -= 1;// cameraAdjustSpeed* deltaTime;
+        }
+
+        if (inputVector != vec3(0)) inputVector = glm::normalize(inputVector);
+
+        return inputVector;
+    }
+
     void mainLoop(GLFWwindow * window, Scene & scene) {
 
         mainScene = &scene;
@@ -183,15 +211,11 @@ private:
         Model* water = scene.sceneModels[0];
 
         float angularAcceleration = 1.0f;
-
+        float boatTurnSpeed = 0;
         float boatAcceleration = 50.f;
         float boatDeceleration = -50.0f;
-
         float maxSpeed = 50.f;
-
         vec3 boatVelocity = vec3(0);
-
-        float boatTurnSpeed = 0;
 
         double lastFrameTime = glfwGetTime();
 
@@ -200,8 +224,6 @@ private:
 
         double cursorX;
         double cursorY;
-        //scene.directionalLights[0]->view = glm::lookAt(vec3(0.0f, 20.0f, 20.f), vec3(0.0f,0.0f,0.0f), vec3(0.f, 1.f, 0.f));//glm::lookAt(vec3(cos(cursorX / scene.width), 20, sin(cursorX / scene.width) ), vec3(0), vec3(0, 1, 0));
-
 
         while( ! glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE) ) {
             GLUtils::checkForOpenGLError(__FILE__,__LINE__);
@@ -211,14 +233,12 @@ private:
 
 
 
-
             //calculating delta time
             double currentFrameTime = glfwGetTime();
             double deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
 
             
-
             //movement stuff
             vec3 inputVector = getInputVector(window);
 
@@ -228,71 +248,51 @@ private:
             if (directionVector != vec3(0) && glm::length(boatVelocity)<maxSpeed) {
                 //rotate
                 vec3 localRight = vec3(boat->transform*glm::vec4(1, 0, 0, 0));
-                float turnScale = inputVector.x;//glm::dot(directionVector, localRight);
+                float turnScale = inputVector.x;
 
                 boat->direction = vec3(glm::rotate(glm::mat4(1), -turnScale * (float)deltaTime, vec3(0, 1, 0))*glm::vec4(boat->direction,0));
 
                 // accelerate
-                float accelerationScale = -inputVector.z;//glm::dot(directionVector, boat->direction);
+                float accelerationScale = -inputVector.z;
 
 
                 directionVector = glm::normalize(directionVector);
 
-                vec3 accelerationVector = boat->direction * accelerationScale * (float)deltaTime * boatAcceleration;//(float)deltaTime * boatAcceleration * directionVector;
+                vec3 accelerationVector = boat->direction * accelerationScale * (float)deltaTime * boatAcceleration;
 
                 boatVelocity += accelerationVector;
-
-                //boat->direction = glm::normalize(boatVelocity);
             }
             if(boatVelocity!=vec3(0)){
                 float deceleration = 0.1f*std::pow(glm::length(boatVelocity),2);
-                //slow down
+                //slow down boat
                 boatVelocity = glm::normalize(boatVelocity) * std::max(glm::length(boatVelocity)-deceleration*(float)deltaTime,0.f);
 
             }
+
+            vec3 movementVector = (float)deltaTime * boatVelocity;
+            boat->translate(movementVector);
+            boat->updateMatrix();
             
             water->program->use();
             water->program->setUniform("boatSpeed", glm::length(boatVelocity));
 
-            vec3 movementVector = (float)deltaTime * boatVelocity;
-
-            boat->translate(movementVector);
-
-
-            if (glfwGetKey(window, GLFW_KEY_UP)) {
-                cameraArm.z -= cameraAdjustSpeed * deltaTime;
-            }
-            if (glfwGetKey(window, GLFW_KEY_DOWN)) {
-                cameraArm.z += cameraAdjustSpeed * deltaTime;
-            }
-            if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
-                cameraArm.x += cameraAdjustSpeed * deltaTime;
-            }
-            if (glfwGetKey(window, GLFW_KEY_LEFT)) {
-                cameraArm.x -= cameraAdjustSpeed * deltaTime;
-            }
-            if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-                cameraArm.y += cameraAdjustSpeed * deltaTime;
-            }
-            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
-                cameraArm.y -= cameraAdjustSpeed * deltaTime;
-            }
 
             bool enable = !glfwGetKey(window, DISABLE_KEY);
 
             if (glfwGetKey(window, WIREFRAME_KEY)) {
                 glPolygonMode(GL_FRONT_AND_BACK, enable ? GL_LINE : GL_FILL);
             }
-
             if (glfwGetKey(window, GAMMA_CORRECTION_KEY)) {
                 boat->program->use();
                 boat->program->setUniform("gammaCorrection", enable);
+                boat->program->setUniform("gamma", enable ? 0.7f : 1.f);
                 water->program->use();
                 water->program->setUniform("gammaCorrection", enable);
+                water->program->setUniform("gamma", enable ? 0.7f : 1.f);
                 scene.skybox.program->use();
                 scene.skybox.program->setUniform("gammaCorrection", enable);
+                scene.skybox.program->setUniform("gamma", enable ? 0.7f : 1.f);
             }
-
             if (glfwGetKey(window, FOG_KEY)) {
                 boat->program->use();
                 boat->program->setUniform("enableFog", enable);
@@ -307,8 +307,8 @@ private:
             }
 
 
+            cameraArm += getCameraInputVector() * cameraAdjustSpeed * (float)deltaTime;
 
-            boat->updateMatrix();
             vec3 targetPosition = boat->position + vec3(boat->transform * glm::vec4(cameraArm, 0));
             scene.sceneCamera.position = glm::mix(scene.sceneCamera.position, targetPosition, deltaTime * 2);
             scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));

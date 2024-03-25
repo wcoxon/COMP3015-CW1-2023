@@ -42,10 +42,4 @@ void main()
 
     FragColor = vec4(computeLight(gPos,normal,colourSample),1);
 
-    if(gammaCorrection){
-		// apply gamma correction
-		float gamma = 2.2;
-		FragColor.rgb = pow(FragColor.rgb, vec3(1.0/gamma));
-    }
-
 }

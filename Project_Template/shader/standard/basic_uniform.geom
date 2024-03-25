@@ -58,17 +58,17 @@ float blinn_phong(vec3 lightDir, vec3 viewDir, vec3 Normal){
     return mtl.specularReflectivity*pow(max(dot(h,Normal),0),mtl.specularPower);
 }
 
+//position (world), normal(world)
 vec3 gouraudLighting(vec3 Pos, vec3 Nor){
-//careful don't leave this like this if you're reworking input pos to worldspace
-            vec3 worldVertexPos = (model*vec4(Pos,1)).xyz;
-            vec3 worldVertexNor = transpose(inverse(mat3(model)))*Nor;//localVertexNor;
+
+            vec3 worldVertexPos = Pos;
+            vec3 worldVertexNor = Nor;//transpose(inverse(mat3(model)))*Nor;
 
             
             vec3 worldViewPos = -(view*vec4(0,0,0,1)).xyz*mat3(view);
-            vec3 viewDir = normalize(worldVertexPos-worldViewPos);//normalize(vPos[x]-viewPosition);
+            vec3 viewDir = normalize(worldVertexPos-worldViewPos);
 
             vec3 Light = vec3(0);
-
             
             float Ambient = mtl.ambientReflectivity;
 
@@ -92,7 +92,6 @@ vec3 gouraudLighting(vec3 Pos, vec3 Nor){
                 float lightDepth = texture(pointDepthMaps,vec4(fragToLight,lightIndex)).r*lights[lightIndex].far_plane;
         
                 float bias = 0.05;
-                //shadow = (fragDepth -  bias) < lightDepth ? 1.0 : 0.0;
 
                 if((fragDepth -  bias) < lightDepth){
                     Light+= lights[lightIndex].lightIntensity*lightAttenuation*(Ambient + Diffuse + Specular)*lights[lightIndex].lightColour;
@@ -164,10 +163,9 @@ void main() {
             TBN = mat3(faceTangent,faceBitangent,faceNormal); //face tbn
         }
         else{
-            gNor = vec3(model*vec4(vNor[x],0));
+            gNor = normalize((model*vec4(vNor[x],0)).xyz);
 
             vec3 vertTangent = normalize(faceTangent - dot(faceTangent, gNor) * gNor); //orthogonalize tangent
-
             vec3 vertBitangent = normalize(cross(gNor,vertTangent));
 
             TBN = mat3(vertTangent,vertBitangent,gNor); //vertex tbn

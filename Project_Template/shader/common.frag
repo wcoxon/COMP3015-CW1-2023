@@ -52,6 +52,7 @@ uniform struct material {
 
 uniform bool volumetricLighting = false;
 uniform bool gammaCorrection = false;
+uniform float gamma = 1;
 
 uniform bool enableFog = false;
 uniform bool skyboxFog = false;
@@ -225,12 +226,18 @@ vec3 computeLight(vec3 Pos, vec3 Nor, vec4 surfaceColour){
 	 }
 
 	 Light *= surfaceColour.rgb;
-
+	 //Light.rgb = normalize(Light.rgb);
 	 if(volumetricLighting){
 		vec4 volumetric = volumetricLight(1.f, Pos);
 		Light *= volumetric.w;
 		Light += volumetric.rgb;
 	 }
 
-	 return mix(clamp(Light,0,1),fogColour.xyz,fogFactor);
+	 if(gammaCorrection){
+		// apply gamma correction
+		//float gamma = 0.7;
+		Light.rgb = pow(Light.rgb, vec3(1.0/gamma));
+	 }
+
+	 return mix(Light,fogColour.xyz,fogFactor);
 }

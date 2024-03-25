@@ -41,7 +41,6 @@ public:
     GLuint vboHandles[2];
 
     GLuint drawMode = GL_TRIANGLES;
-    //vector<Texture> textures;
 
     Texture colourTexture{ Texture() };
     Texture normalMap{ Texture(vec3(0.5,0.5,1.)) };
