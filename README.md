@@ -73,3 +73,6 @@ In the scene, the pink ball/buoy is using gouraud shading.
 
 video:
 https://www.youtube.com/watch?v=IwkkAI-7tA8
+
+evidence of build and run:
+https://youtu.be/xyGmGOaxxa4
