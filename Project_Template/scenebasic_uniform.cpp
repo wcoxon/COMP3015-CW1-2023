@@ -113,8 +113,6 @@ void generatePatches(Model* model) {
     model->drawMode = GL_PATCHES;
 }
 
-//Model* skybox;
-
 Model* water;
 
 Model* ball;
@@ -122,11 +120,13 @@ Model* table;
 Model* wall;
 Model* boat;
 
-//flat shading, ambient, diffuse, specular, power, perfragment
+//{flat shading, ambient, diffuse, specular, power, perfragment}
 Material waterMaterial{ false, .4f, .3f, .8f, 64 };
 Material wallMaterial{ true, .4f, 1.f, 0.0f };
 
 Texture* foamTexture;
+
+int points = 0;
 
 float amplitude = 2;
 float wavelength = 8;
@@ -145,13 +145,12 @@ void SceneBasic_Uniform::initScene()
     water->program = &waterProg;
     generatePatches(water);
     water->colourTexture.load("./media/textures/seaTexture - 56_sea water foam texture-seamless.jpg");
+    foamTexture = new Texture();
+    foamTexture->load("./media/textures/super perlin 2 - 512x512.png");
     water->normalMap.load("./media/textures/0001.png");
     water->scale = vec3(15);
     water->mtl = waterMaterial;
     sceneModels.push_back(water);
-
-    foamTexture = new Texture();
-    foamTexture->load("./media/textures/super perlin 2 - 512x512.png");
 
     wall = new Model();
     wall->program = &prog;
@@ -201,6 +200,27 @@ void SceneBasic_Uniform::initScene()
     vector<GLuint> skyquadIndices = { 0,1,2 };
     vector<std::string> skyboxTexturePaths = { "./media/textures/skybox/right.jpg","./media/textures/skybox/left.jpg","./media/textures/skybox/top.jpg","./media/textures/skybox/bottom.jpg","./media/textures/skybox/front.jpg","./media/textures/skybox/back.jpg" };
 
+    //creating base pass fbo and texture
+    //fbo
+    glGenFramebuffers(1, &renderFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
+    //texture
+    glGenTextures(1, &renderTexture);
+    glBindTexture(GL_TEXTURE_2D, renderTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //attach
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+    //catch
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Error: Framebuffer is not complete!" << std::endl;
+
+    glGenRenderbuffers(1, &renderDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderDepth);
+
     glBindVertexArray(skybox.vaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, skybox.vboHandles[0]);
     glBufferData(GL_ARRAY_BUFFER, skyquadVerts.size() * sizeof(vec3), skyquadVerts.data(), GL_STATIC_DRAW);
@@ -213,8 +233,10 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID);
     
 
+    //creating FBO
     glGenFramebuffers(1, &shadowFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+    //creating Texture
     glGenTextures(1, &texCubeArray);
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texCubeArray);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -223,13 +245,13 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     int numLights = 2;
+    //attach texture to fbo
     glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_DEPTH_COMPONENT24, POINT_SHADOW_RESOLUTION, POINT_SHADOW_RESOLUTION, numLights * 6);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texCubeArray, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //unbind fbo
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0); //unbind texture
 
     glm::mat4 shadowProj = glm::perspective(glm::half_pi<float>(), 1.f, 0.f, 20.0f);
-
     pointLights.push_back(new PointLight());
     pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(-3, -4, -3));
     pointLights[0]->intensity = 35;
@@ -238,9 +260,10 @@ void SceneBasic_Uniform::initScene()
     pointLights[1]->colour = vec3(0,0.5,1);
     pointLights[1]->intensity = 25;
 
-
+    //creating FBO
     glGenFramebuffers(1, &dirShadowFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, dirShadowFBO);
+    //creating Texture
     glGenTextures(1, &directionalTexArray);
     glBindTexture(GL_TEXTURE_2D_ARRAY, directionalTexArray);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -248,11 +271,11 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    //attach texture to fbo
     glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_DEPTH_COMPONENT24, DIRECTIONAL_SHADOW_RESOLUTION, DIRECTIONAL_SHADOW_RESOLUTION, 1);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, directionalTexArray, 0);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        printf("Error: framebuffer is not complete!");
-    }
+    //check if fbo complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) printf("Error: framebuffer is not complete!");
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //unbind fbo
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0); //unbind texture
 
@@ -341,6 +364,9 @@ void SceneBasic_Uniform::initScene()
     skyboxProg.use();
     skyboxProg.setUniform("view", sceneCamera.view);
     skyboxProg.setUniform("projection", sceneCamera.projection);
+
+    postProg.use();
+    postProg.setUniform("renderTexture", 5);
 }
 
 void SceneBasic_Uniform::compile()
@@ -398,6 +424,10 @@ void SceneBasic_Uniform::compile()
         skyboxProg.compileShader("shader/skybox/skyboxShader.frag");
         skyboxProg.link();
 
+        postProg.compileShader("shader/skybox/post.vert");
+        postProg.compileShader("shader/skybox/post.frag");
+        postProg.link();
+
 	} catch (GLSLProgramException &e) {
 		cerr << e.what() << endl;
 		exit(EXIT_FAILURE);
@@ -410,6 +440,7 @@ float getWaveHeight(vec3 position,float time) {
 
 void SceneBasic_Uniform::update( float t )
 {
+    float deltaTime = t - time;
     time = t;
 
     pointLights[0]->transform = glm::translate(glm::mat4(1.0), vec3(glm::sin(time) * -10.0f, -9, glm::cos(time) * -10.0f)); //move light around
@@ -418,14 +449,32 @@ void SceneBasic_Uniform::update( float t )
     ball->updateMatrix();
 
     boat->position.y = getWaveHeight(boat->position, time); //boat bob
-    boat->setUp(vec3((amplitude / wavelength) * -cos(boat->position.x / wavelength + time * waveSpeed), 1, 0));
-    boat->direction = vec3(boat->direction.x, glm::dot(boat->direction,waveDirection) * (amplitude / wavelength) * cos(boat->position.x / wavelength + time * waveSpeed), boat->direction.z);
+    boat->setUp(vec3((amplitude / wavelength) * -cos(boat->position.x / wavelength + time * waveSpeed), 1, 0)); //boat tilt
+    boat->direction = vec3(boat->direction.x, glm::dot(boat->direction,waveDirection) * (amplitude / wavelength) * cos(boat->position.x / wavelength + time * waveSpeed), boat->direction.z); // boat bow
     boat->updateMatrix();
 
     water->program->use();
     water->program->setUniform("boatPosition", boat->position);
     water->position = vec3(sceneCamera.position.x, 0, sceneCamera.position.z);
     water->updateMatrix();
+
+    //check if collide with ball
+    if (glm::distance(boat->position, ball->position) <= 5.f) {
+
+        points++;
+        if (points >= 10) {
+            std::cout << "you won in " << t << "s" << endl;
+            exit(0);
+        }
+
+        float randomX = rand() / (float)INT16_MAX;
+        float randomZ = rand() / (float)INT16_MAX;
+
+        //should be * velocity, and direction should prob be from boat pos to ball
+        ball->translate(vec3(randomX,0,randomZ)*20.f);
+
+        
+    }
 }
 
 void SceneBasic_Uniform::render()
@@ -494,7 +543,9 @@ void SceneBasic_Uniform::render()
     //unbind fbo
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
     glViewport(0, 0, width, height);
+    glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     //render scene
     for (Model* model : sceneModels) {
@@ -512,12 +563,23 @@ void SceneBasic_Uniform::render()
 
         model->drawModel();
     }
+    
 
     //draw skybox
     glDepthFunc(GL_LEQUAL);
     skybox.program->use();
     skybox.program->setUniform("view", sceneCamera.view);
     skybox.program->setUniform("projection", sceneCamera.projection);
+    glBindVertexArray(skybox.vaoHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, renderTexture);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //draw render texture
+    postProg.use();
     glBindVertexArray(skybox.vaoHandle);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

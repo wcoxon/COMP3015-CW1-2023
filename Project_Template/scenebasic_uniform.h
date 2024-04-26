@@ -24,12 +24,15 @@ using glm::mat4;
 class SceneBasic_Uniform : public Scene
 {
 private:
-    GLSLProgram prog, shadowProg, directionalShadowProg, waterProg, skyboxProg, waterDirectionalShadowPass, waterPointShadowPass;
-
-    
+    GLSLProgram prog, shadowProg, directionalShadowProg, waterProg, skyboxProg, postProg, waterDirectionalShadowPass, waterPointShadowPass;
 
     const unsigned int POINT_SHADOW_RESOLUTION=256;
     const unsigned int DIRECTIONAL_SHADOW_RESOLUTION = 512;
+
+
+    GLuint renderTexture;
+    GLuint renderDepth;
+    GLuint renderFBO;
 
     GLuint directionalTexArray;
     GLuint dirShadowFBO;
@@ -42,8 +45,6 @@ private:
     void compile();
 
 public:
-    //Camera sceneCamera;
-    //vector<Model*> sceneModels;
 
     SceneBasic_Uniform();
 

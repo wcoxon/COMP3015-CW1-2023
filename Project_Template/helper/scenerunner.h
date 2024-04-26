@@ -206,7 +206,7 @@ private:
     void mainLoop(GLFWwindow * window, Scene & scene) {
 
         mainScene = &scene;
-
+        Model* ball = scene.sceneModels[3];
         Model* boat = scene.sceneModels[4];
         Model* water = scene.sceneModels[0];
 
@@ -245,7 +245,7 @@ private:
             vec3 directionVector = (glm::transpose(scene.sceneCamera.view) * glm::vec4(inputVector,0)); // turn input into world direction
             directionVector.y = 0; //only direct boat on x z plane
 
-            if (directionVector != vec3(0) && glm::length(boatVelocity)<maxSpeed) {
+            if (directionVector != vec3(0) && glm::length(boatVelocity) < maxSpeed) {
                 //rotate
                 vec3 localRight = vec3(boat->transform*glm::vec4(1, 0, 0, 0));
                 float turnScale = inputVector.x;
@@ -309,9 +309,12 @@ private:
 
             cameraArm += getCameraInputVector() * cameraAdjustSpeed * (float)deltaTime;
 
-            vec3 targetPosition = boat->position + vec3(boat->transform * glm::vec4(cameraArm, 0));
+            vec3 transformedArm = vec3(boat->transform * glm::vec4(cameraArm, 0));
+            vec3 targetPosition = boat->position + vec3(transformedArm.x,cameraArm.y, transformedArm.z);
             scene.sceneCamera.position = glm::mix(scene.sceneCamera.position, targetPosition, deltaTime * 2);
             scene.sceneCamera.view = glm::lookAt(scene.sceneCamera.position, boat->position, vec3(0, 1, 0));
+
+
 
             scene.update(float(glfwGetTime()));
             scene.render();

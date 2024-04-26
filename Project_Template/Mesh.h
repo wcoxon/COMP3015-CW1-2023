@@ -8,30 +8,12 @@
 #include <fstream>
 #include <glad/glad.h>
 #include "helper/glslprogram.h"
+#include "Texture.h"
+#include "Material.h"
 
 using std::vector;
 using glm::vec3;
 
-struct Texture {
-    GLuint handle;
-    std::string name;
-
-    Texture(vec3 defaultColour = vec3(1,0,1));
-    void load(std::string filePath);
-};
-
-struct Material {
-
-    bool shadeFlat = false;
-
-    float ambientReflectivity{ .5 };
-    float diffuseReflectivity{ .5 };
-    float specularReflectivity{ .5 };
-    int specularPower{ 10 };
-
-    bool perFragment = true;
-
-};
 
 class Model {
 public:
