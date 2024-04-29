@@ -200,6 +200,9 @@ void SceneBasic_Uniform::initScene()
     vector<GLuint> skyquadIndices = { 0,1,2 };
     vector<std::string> skyboxTexturePaths = { "./media/textures/skybox/right.jpg","./media/textures/skybox/left.jpg","./media/textures/skybox/top.jpg","./media/textures/skybox/bottom.jpg","./media/textures/skybox/front.jpg","./media/textures/skybox/back.jpg" };
 
+
+
+
     //creating base pass fbo and texture
     //fbo
     glGenFramebuffers(1, &renderFBO);
@@ -210,17 +213,22 @@ void SceneBasic_Uniform::initScene()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenTextures(1, &depthTex);
+    glBindTexture(GL_TEXTURE_2D, depthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     //attach
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+
     //catch
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Error: Framebuffer is not complete!" << std::endl;
 
-    glGenRenderbuffers(1, &renderDepth);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderDepth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderDepth);
 
+    //create skybox vao
     glBindVertexArray(skybox.vaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, skybox.vboHandles[0]);
     glBufferData(GL_ARRAY_BUFFER, skyquadVerts.size() * sizeof(vec3), skyquadVerts.data(), GL_STATIC_DRAW);
@@ -248,6 +256,7 @@ void SceneBasic_Uniform::initScene()
     //attach texture to fbo
     glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_DEPTH_COMPONENT24, POINT_SHADOW_RESOLUTION, POINT_SHADOW_RESOLUTION, numLights * 6);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texCubeArray, 0);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //unbind fbo
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0); //unbind texture
 
@@ -365,8 +374,6 @@ void SceneBasic_Uniform::initScene()
     skyboxProg.setUniform("view", sceneCamera.view);
     skyboxProg.setUniform("projection", sceneCamera.projection);
 
-    postProg.use();
-    postProg.setUniform("renderTexture", 5);
 }
 
 void SceneBasic_Uniform::compile()
@@ -459,7 +466,7 @@ void SceneBasic_Uniform::update( float t )
     water->updateMatrix();
 
     //check if collide with ball
-    if (glm::distance(boat->position, ball->position) <= 5.f) {
+    if (glm::distance(boat->position, ball->position) <= 10.f) {
 
         points++;
         if (points >= 10) {
@@ -467,11 +474,11 @@ void SceneBasic_Uniform::update( float t )
             exit(0);
         }
 
-        float randomX = rand() / (float)INT16_MAX;
-        float randomZ = rand() / (float)INT16_MAX;
+        float randomX = rand() / (float)INT16_MAX * 2 - 1;
+        float randomZ = rand() / (float)INT16_MAX * 2 - 1;
 
         //should be * velocity, and direction should prob be from boat pos to ball
-        ball->translate(vec3(randomX,0,randomZ)*20.f);
+        ball->translate(vec3(randomX,0,randomZ)*50.f);
 
         
     }
@@ -573,8 +580,13 @@ void SceneBasic_Uniform::render()
     glBindVertexArray(skybox.vaoHandle);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, renderTexture);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, depthTex);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -592,4 +604,8 @@ void SceneBasic_Uniform::resize(int w, int h)
     width = w;
     height = h;
     sceneCamera.projection = glm::perspective(45.0f, w / (float)h, 1.0f, sceneCamera.far);
+
+    postProg.use();
+    postProg.setUniform("width", w);
+    postProg.setUniform("height", h);
 }

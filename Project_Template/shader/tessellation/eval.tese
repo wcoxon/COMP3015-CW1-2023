@@ -16,6 +16,9 @@ uniform float wavelength;
 uniform float waveSpeed;
 uniform float amplitude;
 
+uniform vec3 boatPosition;
+uniform float boatSpeed;
+
 // common.tese stubs
 vec4 pointPosition();
 
@@ -33,7 +36,14 @@ void main()
 
     vec4 position = pointPosition();
 
-    float waveHeight = amplitude*sin(position.x/wavelength+time*waveSpeed);
+    float foamStart = boatSpeed*0.3; 
+    float foamEnd = boatSpeed*0.4;
+    float foamFade = foamEnd-foamStart;
+
+    float mixFactor = clamp((distance(position.xyz, boatPosition) - foamStart)/foamFade,0,1);
+
+
+    float waveHeight = amplitude*sin(position.x/wavelength+time*waveSpeed) + mix(1,0,mixFactor);
     vec3 waveNormal = vec3((amplitude/wavelength)*-cos(position.x/wavelength+time*waveSpeed), 1, 0);
 
     position.y += waveHeight;

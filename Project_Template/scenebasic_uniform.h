@@ -33,6 +33,7 @@ private:
     GLuint renderTexture;
     GLuint renderDepth;
     GLuint renderFBO;
+    GLuint depthTex;
 
     GLuint directionalTexArray;
     GLuint dirShadowFBO;
