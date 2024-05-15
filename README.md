@@ -4,11 +4,11 @@
 
 Shadow Mapping
 - 
-point light shadowcasting is implemented by rendering the scene depth in 6 faces of a cubemap in the omniDepthShader.geom shader, the omniDepthShader.vert shader passes through vertices to geometry shader primitives, and omniDepthShader.frag renders the fragment depths.
+point light shadowcasting is implemented by rendering the scene depth in 6 faces of a cubemap in the omniDepthShader.geom shader, the depthShader.vert shader passes through vertices to geometry shader primitives, and depthShader.frag renders the fragment depths.
 
 directional light shadowmapping uses the same vert and frag shaders to perform the above describes functions in the pipeline, but uses a different geometry shader since a directional light doesn't cast shadows in all directions, and instead renders depths of each primitive once orthographically to a 2D texture.
 
-these depth textures are then binded to uniforms in the base pass, allowing a fragment to have it's distance from the lights compared to their rendered depths towards it, indicating whether or not the light from each source reaches the current fragment.
+these depth textures are then binded to uniforms in the base pass, allowing a fragment to have its distance from the lights compared to their rendered depths towards it, indicating whether or not the light from each source reaches the current fragment.
 
 Dynamic Tessellation
 -
