@@ -13,8 +13,6 @@ void main()
     colour = texture(skybox,sampleDirection);
 
 	if(gammaCorrection){
-		// apply gamma correction
-		//float gamma = 2.2;
 		colour.rgb = pow(colour.rgb, vec3(1.0/gamma));
     }
 

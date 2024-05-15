@@ -73,19 +73,17 @@ void main() {
             gNor = normalize(cross(vPos[1]-vPos[0],vPos[2]-vPos[0]));
 
         }
-        else gNor = gNor = vNor[x]; // normalize(waveNormal);
+        else gNor = vNor[x]; 
 
         if(gNor.y!=1){
             //swivel tangent space from y axis
             vec3 tangent = cross(vec3(0,1,0),gNor);
-            //vec3 tangent = vec3(-gNor.y,gNor.x,gNor.z);
             vec3 bitangent = cross(gNor,tangent);
             vec3 normal = gNor;
             TBN = mat3(tangent,bitangent,normal);
         }
         else{
             vec3 tangent = cross(vec3(0,0,1),gNor);
-            //vec3 tangent = vec3(-gNor.y,gNor.x,gNor.z);
             vec3 bitangent = cross(gNor,tangent);
             vec3 normal = gNor;
             TBN = mat3(tangent,bitangent,normal);

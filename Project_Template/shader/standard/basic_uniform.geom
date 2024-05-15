@@ -82,8 +82,6 @@ vec3 gouraudLighting(vec3 Pos, vec3 Nor){
                 float Diffuse = mtl.diffuseReflectivity * max(-dot(lightDir, worldVertexNor),0);
                 float Specular = mtl.specularReflectivity * pow(max(-dot(lightReflectDir,viewDir),0),mtl.specularPower);
                 
-                //Light += lights[lightIndex].lightIntensity*lightAttenuation*(Ambient + Diffuse + Specular)*lights[lightIndex].lightColour;
-
                 vec3 fragToLight = (lights[lightIndex].transform*vec4(worldVertexPos,1.0)).xyz;
 
                 float fragDepth = length(fragToLight);

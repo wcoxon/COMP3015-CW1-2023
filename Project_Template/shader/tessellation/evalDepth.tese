@@ -14,9 +14,7 @@ void main()
     vec4 position = pointPosition();
 
     //wave stuff
-
     float waveHeight = amplitude*sin(position.x/wavelength+time*waveSpeed);
-
     position.y += waveHeight;
 
 

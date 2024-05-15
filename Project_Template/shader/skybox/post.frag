@@ -1,7 +1,6 @@
 #version 460
 
 layout (location = 0) in vec3 vPos;
-
 out vec4 colour;
 
 layout(binding = 5) uniform sampler2D renderTexture;
@@ -10,6 +9,8 @@ layout(binding = 6) uniform sampler2D depthTexture;
 uniform float width=800;
 uniform float height=600;
 
+uniform int pass_ID;
+uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
 void make_kernel(inout vec4 n[9], sampler2D tex, vec2 coord)
 {
@@ -27,51 +28,57 @@ void make_kernel(inout vec4 n[9], sampler2D tex, vec2 coord)
 	n[8] = texture2D(tex, coord + vec2(  w, h));
 }
 
+void sample_neighbours(sampler2D image, vec2 TexCoords,bool horizontal)
+{             
+    vec2 tex_offset = 1.0 / textureSize(image, 0); // gets size of single texel
+    vec3 result = texture(image, TexCoords).rgb * weight[0]; // current fragment's contribution
+    if(horizontal)
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoords + vec2( i/width, 0)).rgb * weight[i];
+            result += texture(image, TexCoords - vec2(i/width, 0)).rgb * weight[i];
+        }
+    }
+    else
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoords + vec2(0, i/height)).rgb * weight[i];
+            result += texture(image, TexCoords - vec2(0, i/height)).rgb * weight[i];
+        }
+    }
+    colour = vec4(result, 1.0);
+}
+
+
 void main()
 {
 
-    colour = texture(renderTexture,vPos.xy);
+    switch(pass_ID){
+	case 0:
+		vec4 n[9];
+		make_kernel( n, depthTexture, vPos.xy );
 
-    //vec4 colourKernel[9];
-    //make_kernel( colourKernel, renderTexture, vPos.xy );
-    //
-    //for(int x = 0; x < 9; x++){
-    //    if(dot(colourKernel[x].rgb, vec3(0.2126, 0.7152, 0.0722))>1){
-    //        colour+=colourKernel[x];
-    //    }
-    //}
+		vec4 sobel_edge_h = n[2] + (2.0*n[5]) + n[8] - (n[0] + (2.0*n[3]) + n[6]);
+  		vec4 sobel_edge_v = n[0] + (2.0*n[1]) + n[2] - (n[6] + (2.0*n[7]) + n[8]);
+		vec4 sobel = sqrt((sobel_edge_h * sobel_edge_h) + (sobel_edge_v * sobel_edge_v));
+		colour = texture(renderTexture,vPos.xy);
+		colour *= sobel.r <0.01 ? 1:0 ;
+		break;
 
-    //blurring
+	case 1:
+		//horizontal blur
+		sample_neighbours(renderTexture,vPos.xy,true);
+		break;
 
-    //float d = 0.005;
-    //
-    //colour += texture(renderTexture,vPos.xy + vec2(-d,-d)) * 0.25;
-    //colour += texture(renderTexture,vPos.xy + vec2(0,-d)) * 0.5;
-    //colour += texture(renderTexture,vPos.xy + vec2(d,-d)) * 0.25;
-    //
-    //colour += texture(renderTexture,vPos.xy + vec2(-d,0)) * 0.5;
-    //colour += texture(renderTexture,vPos.xy + vec2(d,0)) * 0.5;
-    //
-    //colour += texture(renderTexture,vPos.xy + vec2(-d,d)) * 0.25;
-    //colour += texture(renderTexture,vPos.xy + vec2(0,d))*0.5;
-    //colour += texture(renderTexture,vPos.xy + vec2(d,d)) * 0.25;
-    //
-    //colour /= 4;
+	case 2:
+		//vertical blur
+		sample_neighbours(renderTexture,vPos.xy,false);
+		break;
 
-    vec4 n[9];
-    make_kernel( n, depthTexture, vPos.xy );
-
-    vec4 sobel_edge_h = n[2] + (2.0*n[5]) + n[8] - (n[0] + (2.0*n[3]) + n[6]);
-  	vec4 sobel_edge_v = n[0] + (2.0*n[1]) + n[2] - (n[6] + (2.0*n[7]) + n[8]);
-	vec4 sobel = sqrt((sobel_edge_h * sobel_edge_h) + (sobel_edge_v * sobel_edge_v));
-
-    
-
-    //colour = texture(renderTexture,vPos.xy);
-    colour *= sobel.r <0.01 ? 1:0 ;
-
-    //float brightness = dot(colour.rgb, vec3(0.2126, 0.7152, 0.0722));
-    
-    //if(brightness<1) colour = vec4(0.0, 0.0, 0.0, 1.0);
-
+	default:
+		colour = texture(renderTexture,vPos.xy);
+		break;
+    }
 }

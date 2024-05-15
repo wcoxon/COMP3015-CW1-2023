@@ -31,8 +31,10 @@ private:
 
 
     GLuint renderTexture;
+    GLuint backTexture;
     GLuint renderDepth;
     GLuint renderFBO;
+    GLuint backFBO;
     GLuint depthTex;
 
     GLuint directionalTexArray;

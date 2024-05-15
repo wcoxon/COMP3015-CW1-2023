@@ -120,7 +120,7 @@ Model* table;
 Model* wall;
 Model* boat;
 
-//{flat shading, ambient, diffuse, specular, power, perfragment}
+// {flat shading, ambient, diffuse, specular, power, perfragment}
 Material waterMaterial{ false, .4f, .3f, .8f, 64 };
 Material wallMaterial{ true, .4f, 1.f, 0.0f };
 
@@ -201,9 +201,7 @@ void SceneBasic_Uniform::initScene()
     vector<std::string> skyboxTexturePaths = { "./media/textures/skybox/right.jpg","./media/textures/skybox/left.jpg","./media/textures/skybox/top.jpg","./media/textures/skybox/bottom.jpg","./media/textures/skybox/front.jpg","./media/textures/skybox/back.jpg" };
 
 
-
-
-    //creating base pass fbo and texture
+    // creating base pass fbo and textures (color, depth)
     //fbo
     glGenFramebuffers(1, &renderFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
@@ -213,19 +211,40 @@ void SceneBasic_Uniform::initScene()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    //depth texture/buffer
     glGenTextures(1, &depthTex);
     glBindTexture(GL_TEXTURE_2D, depthTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //attach
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    //attach colour and depth textures to FBO colour and depth
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
-
-    //catch
+    //catch fbo issues
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Error: Framebuffer is not complete!" << std::endl;
+
+
+    //making the back buffer for rendering to when reading from the render texture
+    glGenFramebuffers(1, &backFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, backFBO);
+    //back texture
+    glGenTextures(1, &backTexture);
+    glBindTexture(GL_TEXTURE_2D, backTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    //attach
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backTexture, 0);
 
 
     //create skybox vao
@@ -241,6 +260,8 @@ void SceneBasic_Uniform::initScene()
     glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID);
     
 
+    int numLights = 2;
+    //create point light shadowcasting fbo and texture
     //creating FBO
     glGenFramebuffers(1, &shadowFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
@@ -252,8 +273,7 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    int numLights = 2;
-    //attach texture to fbo
+    //attach texture to fbo depth
     glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_DEPTH_COMPONENT24, POINT_SHADOW_RESOLUTION, POINT_SHADOW_RESOLUTION, numLights * 6);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texCubeArray, 0);
 
@@ -269,6 +289,7 @@ void SceneBasic_Uniform::initScene()
     pointLights[1]->colour = vec3(0,0.5,1);
     pointLights[1]->intensity = 25;
 
+    //create fbo and depth buffer for directional shadowmapping
     //creating FBO
     glGenFramebuffers(1, &dirShadowFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, dirShadowFBO);
@@ -379,14 +400,14 @@ void SceneBasic_Uniform::initScene()
 void SceneBasic_Uniform::compile()
 {
 	try {
-        shadowProg.compileShader("shader/lightmapping/omniDepthShader.vert");
+        shadowProg.compileShader("shader/lightmapping/depthShader.vert");
         shadowProg.compileShader("shader/lightmapping/omniDepthShader.geom");
-        shadowProg.compileShader("shader/lightmapping/omniDepthShader.frag");
+        shadowProg.compileShader("shader/lightmapping/depthShader.frag");
         shadowProg.link();
 
-        directionalShadowProg.compileShader("shader/lightmapping/omniDepthShader.vert");
+        directionalShadowProg.compileShader("shader/lightmapping/depthShader.vert");
         directionalShadowProg.compileShader("shader/lightmapping/directionalDepthShader.geom");
-        directionalShadowProg.compileShader("shader/lightmapping/omniDepthShader.frag");
+        directionalShadowProg.compileShader("shader/lightmapping/depthShader.frag");
         directionalShadowProg.link();
 
 		prog.compileShader("shader/standard/basic_uniform.vert");
@@ -394,7 +415,6 @@ void SceneBasic_Uniform::compile()
         prog.compileShader("shader/common.frag"); //fragment shader
 		prog.compileShader("shader/standard/basic_uniform.frag");
 		prog.link();
-
 
         waterProg.compileShader("shader/water/waterShader.vert"); // pass through vertex shader
         waterProg.compileShader("shader/tessellation/common.tesc");  // tessellation control shader
@@ -406,26 +426,23 @@ void SceneBasic_Uniform::compile()
         waterProg.compileShader("shader/water/waterShader.frag");
         waterProg.link();
 
-
-        waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
+        waterDirectionalShadowPass.compileShader("shader/lightmapping/depthShader.vert");
         waterDirectionalShadowPass.compileShader("shader/tessellation/common.tesc");
         waterDirectionalShadowPass.compileShader("shader/tessellation/controlDepth.tesc");
         waterDirectionalShadowPass.compileShader("shader/tessellation/common.tese");
         waterDirectionalShadowPass.compileShader("shader/tessellation/evalDepth.tese");
         waterDirectionalShadowPass.compileShader("shader/lightmapping/directionalDepthShader.geom");
-        waterDirectionalShadowPass.compileShader("shader/lightmapping/waterDepthShader.frag");
+        waterDirectionalShadowPass.compileShader("shader/lightmapping/depthShader.frag");
         waterDirectionalShadowPass.link();
 
-
-        waterPointShadowPass.compileShader("shader/lightmapping/waterDepthShader.vert");
+        waterPointShadowPass.compileShader("shader/lightmapping/depthShader.vert");
         waterPointShadowPass.compileShader("shader/tessellation/common.tesc");
         waterPointShadowPass.compileShader("shader/tessellation/controlDepth.tesc");
         waterPointShadowPass.compileShader("shader/tessellation/common.tese");
         waterPointShadowPass.compileShader("shader/tessellation/evalDepth.tese");
         waterPointShadowPass.compileShader("shader/lightmapping/omniDepthShader.geom");
-        waterPointShadowPass.compileShader("shader/lightmapping/waterDepthShader.frag");
+        waterPointShadowPass.compileShader("shader/lightmapping/depthShader.frag");
         waterPointShadowPass.link();
-
 
         skyboxProg.compileShader("shader/skybox/skyboxShader.vert");
         skyboxProg.compileShader("shader/skybox/skyboxShader.frag");
@@ -477,10 +494,7 @@ void SceneBasic_Uniform::update( float t )
         float randomX = rand() / (float)INT16_MAX * 2 - 1;
         float randomZ = rand() / (float)INT16_MAX * 2 - 1;
 
-        //should be * velocity, and direction should prob be from boat pos to ball
         ball->translate(vec3(randomX,0,randomZ)*50.f);
-
-        
     }
 }
 
@@ -554,6 +568,7 @@ void SceneBasic_Uniform::render()
     glViewport(0, 0, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
     //render scene
     for (Model* model : sceneModels) {
         model->program->use();
@@ -567,10 +582,8 @@ void SceneBasic_Uniform::render()
             glActiveTexture(GL_TEXTURE5);
             glBindTexture(GL_TEXTURE_2D, foamTexture->handle);
         }
-
         model->drawModel();
     }
-    
 
     //draw skybox
     glDepthFunc(GL_LEQUAL);
@@ -581,21 +594,49 @@ void SceneBasic_Uniform::render()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
+    //switch to post fx program
+    postProg.use();
+    
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, renderTexture);
-
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, depthTex);
+    
+    glBindVertexArray(skybox.vaoHandle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
+    glDisable(GL_DEPTH_TEST);
+
+
+    GLint polygonMode;
+    glGetIntegerv(GL_POLYGON_MODE, &polygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    //perform guassian blur repeatedly
+    for(int b = 0;  b < 4; b++){
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, renderTexture);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, backFBO);
+        postProg.setUniform("pass_ID", 1); // horizontal blur
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, backTexture);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
+        postProg.setUniform("pass_ID", 2); // vertical blur
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+    }
+    
+    
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    //draw render texture
-    postProg.use();
-    glBindVertexArray(skybox.vaoHandle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox.vboHandles[1]);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    postProg.setUniform("pass_ID", 0); //edge detection pass
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
+    glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
     glBindVertexArray(0); //unbind vao
 }
 
@@ -604,6 +645,15 @@ void SceneBasic_Uniform::resize(int w, int h)
     width = w;
     height = h;
     sceneCamera.projection = glm::perspective(45.0f, w / (float)h, 1.0f, sceneCamera.far);
+
+    glBindTexture(GL_TEXTURE_2D, renderTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, depthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, backTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     postProg.use();
     postProg.setUniform("width", w);
