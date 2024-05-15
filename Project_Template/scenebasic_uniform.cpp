@@ -135,6 +135,7 @@ glm::vec3 waveDirection = vec3(1, 0, 0);
 
 void SceneBasic_Uniform::initScene()
 {
+    srand(std::time(NULL));
     glFrontFace(GL_CW);
     glEnable(GL_DEPTH_TEST);
     glPatchParameteri(GL_PATCH_VERTICES, 4);
@@ -488,6 +489,8 @@ void SceneBasic_Uniform::update( float t )
         points++;
         if (points >= 10) {
             std::cout << "you won in " << t << "s" << endl;
+            string input;
+            std::getline(std::cin,input);
             exit(0);
         }
 
